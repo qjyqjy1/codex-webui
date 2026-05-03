@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codex Web UI - AI助手</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;
+  --text:#c9d1d9;--text2:#8b949e;--accent:#58a6ff;--green:#3fb950;
+  --red:#f85149;--yellow:#d29922;--purple:#bc8cff;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;overflow:hidden}
+
+/* 顶部工具栏 */
+.topbar{height:48px;min-height:48px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0}
+.topbar .logo{font-size:16px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:8px}
+.topbar .logo .dot{width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.topbar-actions{display:flex;gap:8px}
+.topbar-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s}
+.topbar-btn:hover{background:var(--bg);border-color:var(--accent);color:var(--accent)}
+.topbar-btn .icon{font-size:14px}
+
+/* 抽屉遮罩 */
+.drawer-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:100;display:none;animation:fadeIn .15s}
+.drawer-overlay.active{display:block}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* 抽屉 */
+.drawer{position:fixed;top:48px;right:0;width:360px;max-width:100%;height:calc(100vh - 48px);background:var(--bg2);border-left:1px solid var(--border);z-index:101;transform:translateX(100%);transition:transform .2s ease;overflow-y:auto}
+.drawer.active{transform:translateX(0)}
+.drawer-header{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.drawer-header h3{font-size:16px;font-weight:600}
+.drawer-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;padding:4px;line-height:1}
+.drawer-close:hover{color:var(--accent)}
+.drawer-content{padding:12px}
+
+/* 会话列表 */
+.session-list{display:flex;flex-direction:column;gap:4px}
+.session-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;transition:all .15s}
+.session-item:hover{border-color:var(--accent);background:var(--bg)}
+.session-item.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(88,166,255,.2)}
+.session-item .title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+.session-item .meta{font-size:11px;color:var(--text2)}
+.session-item .actions{display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);gap:8px}
+.session-item:hover .actions{display:flex}
+.session-item .actions button{background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;padding:2px 6px;border-radius:4px}
+.session-item .actions button:hover{color:var(--accent);background:var(--bg)}
+
+/* 新建按钮 */
+.new-session-btn{width:100%;background:var(--accent);color:#000;border:none;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;transition:opacity .15s}
+.new-session-btn:hover{opacity:.85}
+
+/* 运行记录列表 */
+.history-list{display:flex;flex-direction:column;gap:4px}
+.history-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;transition:all .15s}
+.history-item:hover{border-color:var(--accent);background:var(--bg)}
+.history-item .cmd{font-size:13px;color:var(--text);font-family:monospace;background:var(--bg);padding:6px 8px;border-radius:4px;margin-bottom:6px;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
+.history-item .meta{font-size:11px;color:var(--text2)}
+.history-item .status{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:3px;font-size:10px}
+.history-item .status.success{background:rgba(63,185,80,.2);color:var(--green)}
+.history-item .status.failed{background:rgba(248,81,73,.2);color:var(--red)}
+.history-item .status.running{background:rgba(210,153,34,.2);color:var(--yellow)}
+
+/* 主内容区 */
+.main-area{display:flex;flex-direction:column;height:100%}
+
+/* 聊天区域 */
+.chat-area{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.chat-header{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg2);flex-shrink:0}
+.chat-header h2{font-size:14px;font-weight:600}
+.chat-header .badge{background:var(--bg3);border:1px solid var(--border);padding:2px 10px;border-radius:12px;font-size:11px;color:var(--text2)}
+.messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
+.msg{display:flex;gap:12px;max-width:900px;animation:msgIn .2s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.msg .avatar{width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.msg.user .avatar{background:var(--accent);color:#000}
+.msg.assistant .avatar{background:var(--purple);color:#fff}
+.msg .content{flex:1;min-width:0}
+.msg .meta{font-size:11px;color:var(--text2);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.msg .body{font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-all}
+.msg .body code{background:var(--bg3);padding:2px 6px;border-radius:4px;font-family:'SF Mono',Consolas,monospace;font-size:13px}
+.msg .body pre{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto;margin:8px 0}
+.msg .body pre code{background:none;padding:0;font-size:13px}
+
+/* 欢迎页面 */
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:16px;color:var(--text2);padding:20px}
+.welcome .logo{font-size:56px}
+.welcome h2{font-size:22px;color:var(--text);font-weight:600}
+.welcome p{font-size:15px;max-width:480px}
+.welcome .shortcuts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.welcome .shortcut{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 18px;font-size:14px;cursor:pointer;transition:all .15s;color:var(--text)}
+.welcome .shortcut:hover{border-color:var(--accent);color:var(--accent)}
+
+/* 输入框区域 */
+.input-area{padding:16px 20px;border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+.input-toolbar{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.toolbar-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;font-size:14px;padding:6px 10px;border-radius:6px;display:flex;align-items:center;gap:5px;transition:all .15s}
+.toolbar-btn:hover{background:var(--bg);border-color:var(--accent);color:var(--accent)}
+.toolbar-btn.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.toolbar-divider{width:1px;height:20px;background:var(--border);margin:0 4px}
+.input-settings{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.setting-tag{background:var(--bg);
+border:1px solid var(--border);
+border-radius:12px;padding:3px 8px;font-size:11px;color:var(--text2);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:4px}
+.setting-tag:hover{border-color:var(--accent);color:var(--accent)}
+.setting-tag.active{background:rgba(88,166,255,.1);border-color:var(--accent);color:var(--accent)}
+.setting-tag.active::after{content:'✓';font-size:10px}
+.input-wrap{display:flex;gap:10px;align-items:flex-end;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:12px 14px;transition:border-color .15s}
+.input-wrap:focus-within{border-color:var(--accent)}
+textarea{flex:1;background:none;border:none;color:var(--text);font-size:14px;font-family:inherit;resize:none;outline:none;max-height:150px;line-height:1.5;min-height:24px}
+textarea::placeholder{color:var(--text2)}
+.send-area{display:flex;align-items:center;gap:8px}
+.upload-btn{background:var(--bg);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:6px;cursor:pointer;transition:all .15s;font-size:14px}
+.upload-btn:hover{border-color:var(--accent);color:var(--accent)}
+.send-btn{background:var(--accent);color:#000;border:none;border-radius:8px;padding:8px 20px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s;white-space:nowrap}
+.send-btn:hover{opacity:.85}
+.send-btn:disabled{opacity:.4;cursor:default}
+.input-hint{font-size:11px;color:var(--text2);margin-top:6px}
+.input-hint kbd{background:var(--bg3);padding:1px 5px;border-radius:3px;font-size:10px;border:1px solid var(--border)}
+.file-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.file-item{background:var(--bg);border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:12px;display:flex;align-items:center;gap:6px}
+.file-item .remove{color:var(--red);cursor:pointer}
+
+/* 侧边栏 */
+.sidebar{width:240px;min-width:240px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:16px;border-bottom:1px solid var(--border)}
+.sidebar-header h1{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.sidebar-header h1 .dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+.sidebar-header .subtitle{font-size:11px;color:var(--text2);margin-top:4px}
+.sidebar-section{padding:12px 16px;border-bottom:1px solid var(--border)}
+.sidebar-section h3{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:10px}
+.model-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:12px}
+.model-card .label{color:var(--text2);font-size:10px}
+.model-card .value{color:var(--accent);font-weight:600;margin-top:2px}
+.model-card .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.model-card .row:last-child{margin-bottom:0}
+.status-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:5px}
+.status-dot.green{background:var(--green)}
+.status-dot.yellow{background:var(--yellow)}
+
+/* 滚动条 */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* 响应式 */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .drawer{width:100vw;right:-100vw}
+}
+</style>
+</head>
+<body>
+
+<!-- 顶部工具栏 -->
+<div class="topbar">
+  <div class="logo"><span class="dot"></span> Codex AI助手</div>
+  <div class="topbar-actions">
+    <button class="topbar-btn" onclick="openDrawer('session')" id="chatBtn">
+      <span class="icon">💬</span> Chat 会话
+    </button>
+    <button class="topbar-btn" onclick="openDrawer('history')" id="historyBtn">
+      <span class="icon">📜</span> 运行记录
+    </button>
+  </div>
+</div>
+
+<div class="main-area">
+  <!-- 侧边栏 -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1><span class="dot"></span> Codex</h1>
+      <div class="subtitle">AI 代码助手</div>
+    </div>
+    <div class="sidebar-section">
+      <h3>模型信息</h3>
+      <div class="model-card">
+        <div class="row"><span class="label">模型</span><span class="value" id="modelName">加载中...</span></div>
+        <div class="row"><span class="label">提供商</span><span class="value" id="providerName">-</span></div>
+        <div class="row"><span class="label">推理</span><span class="value" id="reasoning">-</span></div>
+        <div class="row"><span class="label">上下文</span><span class="value" id="context">-</span></div>
+        <div class="row"><span class="label">端口</span><span class="value">9009</span></div>
+        <div class="row"><span class="label">网络</span><span class="value" id="networkStatus">-</span></div>
+      </div>
+    </div>
+    <div style="flex:1"></div>
+    <div class="sidebar-section" style="font-size:10px;color:var(--text2);text-align:center">
+      Codex CLI · gpt-5.3-codex
+    </div>
+  </div>
+
+  <!-- 聊天区域 -->
+  <div class="chat-area">
+    <div class="chat-header">
+      <h2>💬 聊天</h2>
+      <span class="badge" id="sessionBadge">当前会话</span>
+    </div>
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <div class="logo">⚡</div>
+        <h2>欢迎使用 Codex AI 助手</h2>
+        <p>这是一个集成了会话管理和运行记录的智能编码助手界面</p>
+        <div class="shortcuts">
+          <div class="shortcut" onclick="useShortcut('展示项目结构')">📁 项目结构</div>
+          <div class="shortcut" onclick="useShortcut('运行什么模型？')">🤖 模型信息</div>
+          <div class="shortcut" onclick="useShortcut('帮我重构这段代码')">🔧 代码重构</div>
+          <div class="shortcut" onclick="useShortcut('运行测试用例')">🧪 运行测试</div>
+        </div>
+      </div>
+    </div>
+    <div class="input-area">
+      <div class="input-toolbar">
+        <div class="setting-tag active" onclick="toggleSetting(this,'background')">
+          <span>后台执行</span>
+        </div>
+        <div class="setting-tag" onclick="toggleSetting(this,'priority')">
+          <span>高优先级</span>
+        </div>
+        <div class="setting-tag" onclick="toggleSetting(this,'stream')">
+          <span>流式输出</span>
+        </div>
+        <div class="toolbar-divider"></div>
+      </div>
+      <div class="input-settings" id="activeSettings">
+        <div class="setting-tag active" id="setting-bg">
+          后台执行
+          <span onclick="removeSetting('bg')" style="margin-left:4px;cursor:pointer">×</span>
+        </div>
+      </div>
+      <div class="input-wrap">
+        <textarea id="input" placeholder="输入消息内容...（支持多行，按 Enter 发送，Shift+Enter 换行）" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <div class="send-area">
+          <button class="upload-btn" onclick="document.getElementById('fileInput').click()" title="上传附件">
+            📎
+          </button>
+          <input type="file" id="fileInput" multiple style="display:none" onchange="handleFiles(this.files)">
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">发送</button>
+        </div>
+      </div>
+      <div class="file-list" id="fileList"></div>
+      <div class="input-hint">
+        <kbd>Enter</kbd> 发送消息 · <kbd>Shift</kbd>+<kbd>Enter</kbd> 换行 · <kbd>↑</kbd> 历史消息
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 聊天会话抽屉 -->
+<div class="drawer-overlay" id="sessionOverlay" onclick="closeDrawer('session')"></div>
+<div class="drawer" id="sessionDrawer">
+  <div class="drawer-header">
+    <h3>💬 Chat 会话</h3>
+    <button class="drawer-close" onclick="closeDrawer('session')">×</button>
+  </div>
+  <div class="drawer-content">
+    <div class="session-list" id="sessionList">
+      <!-- 会话列表将通过JS动态生成 -->
+    </div>
+    <button class="new-session-btn" onclick="newSession()">
+      <span>+</span> 新建会话
+    </button>
+  </div>
+</div>
+
+<!-- 运行记录抽屉 -->
+<div class="drawer-overlay" id="historyOverlay" onclick="closeDrawer('history')"></div>
+<div class="drawer" id="historyDrawer">
+  <div class="drawer-header">
+    <h3>📜 运行记录</h3>
+    <button class="drawer-close" onclick="closeDrawer('history')">×</button>
+  </div>
+  <div class="drawer-content">
+    <div class="history-list" id="historyList">
+      <!-- 运行记录将通过JS动态生成 -->
+    </div>
+  </div>
+</div>
+
+<script>
+// 数据存储
+let sessions = JSON.parse(localStorage.getItem('codex_sessions') || '[]');
+let currentSessionId = localStorage.getItem('codx_current_session') || null;
+let history = JSON.parse(localStorage.getItem('codx_history') || '[]');
+let uploadedFiles = [];
+let activeSettings = new Set(['background']);
+
+// 初始化
+if(sessions.length === 0) {
+  sessions.push({
+    id: makeId(),
+    title: '默认会话',
+    createdAt: new Date().toISOString(),
+    lastMessage: null
+  });
+  saveSessions();
+}
+if(!currentSessionId) {
+  currentSessionId = sessions[0].id;
+  localStorage.setItem('codx_current_session', currentSessionId);
+}
+
+// 工具函数
+function makeId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// 抽屉操作
+function openDrawer(type) {
+  document.getElementById(type + 'Overlay').classList.add('active');
+  document.getElementById(type + 'Drawer').classList.add('active');
+  if(type === 'session') renderSessions();
+  if(type === 'history') renderHistory();
+}
+function closeDrawer(type) {
+  document.getElementById(type + 'Overlay').classList.remove('active');
+  document.getElementById(type + 'Drawer').classList.remove('active');
+}
+
+// 会话管理
+function renderSessions() {
+  const el = document.getElementById('sessionList');
+  el.innerHTML = sessions.map(s => `
+    <div class="session-item ${s.id === currentSessionId ? 'active' : ''}" onclick="switchSession('${s.id}')">
+      <div class="title">${escHtml(s.title)}</div>
+      <div class="meta">${s.lastMessage ? '最后消息: ' + escHtml(s.lastMessage.substring(0,30)) + '...' : '暂无消息'} · ${formatDate(s.createdAt)}</div>
+      <div class="actions">
+        <button onclick="event.stopPropagation();renameSession('${s.id}')">重命名</button>
+        <button onclick="event.stopPropagation();deleteSession('${s.id}')">删除</button>
+      </div>
+    </div>
+  `).join('');
+}
+function newSession() {
+  const title = prompt('请输入新会话名称:', '新会话 ' + (sessions.length + 1));
+  if(!title) return;
+  const s = {
+    id: makeId(),
+    title: title,
+    createdAt: new Date().toISOString(),
+    lastMessage: null
+  };
+  sessions.unshift(s);
+  saveSessions();
+  switchSession(s.id);
+  closeDrawer('session');
+  renderSessions();
+}
+function switchSession(id) {
+  currentSessionId = id;
+  localStorage.setItem('codx_current_session', id);
+  renderSessions();
+  document.getElementById('sessionBadge').textContent = sessions.find(s => s.id === id).title;
+  // 清空当前消息
+  document.getElementById('messages').innerHTML = '<div class="welcome"><div class="logo">⚡</div><h2>切换到: ' + escHtml(sessions.find(s => s.id === id).title) + '</h2><p>开始新的对话</p></div>';
+}
+function renameSession(id) {
+  const s = sessions.find(x => x.id === id);
+  const newTitle = prompt('重命名会话:', s.title);
+  if(newTitle && newTitle !== s.title) {
+    s.title = newTitle;
+    saveSessions();
+    renderSessions();
+  }
+}
+function deleteSession(id) {
+  if(sessions.length <= 1) { alert('至少保留一个会话'); return; }
+  if(!confirm('确定删除此会话?')) return;
+  sessions = sessions.filter(s => s.id !== id);
+  if(currentSessionId === id) currentSessionId = sessions[0].id;
+  saveSessions();
+  renderSessions();
+}
+function saveSessions() {
+  localStorage.setItem('codex_sessions', JSON.stringify(sessions));
+  localStorage.setItem('codx_current_session', currentSessionId);
+}
+
+// 运行记录
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  el.innerHTML = history.map(h => `
+    <div class="history-item" onclick="loadHistoryCmd('${escHtml(h.cmd)}')">
+      <div class="cmd">${escHtml(h.cmd)}</div>
+      <div class="meta">
+        ${formatDate(h.timestamp)}
+        <span class="status ${h.status}">${h.status === 'success' ? '✓ 成功' : h.status === 'failed' ? '✗ 失败' : '⟳ 运行中'}</span>
+        ${h.duration ? ' · 耗时 ' + h.duration : ''}
+      </div>
+    </div>
+  `).join('') || '<p style="text-align:center;color:var(--text2);padding:20px;">暂无运行记录</p>';
+}
+function addHistory(cmd, status, duration) {
+  const now = new Date();
+  history.unshift({ cmd: cmd.substring(0, 500), timestamp: now.toISOString(), status: status, duration: duration || '' });
+  if(history.length > 50) history = history.slice(0, 50);
+  localStorage.setItem('codx_history', JSON.stringify(history));
+  renderHistory();
+}
+function loadHistoryCmd(cmd) {
+  document.getElementById('input').value = cmd;
+  autoResize(document.getElementById('input'));
+  closeDrawer('history');
+}
+
+// 日期格式化
+function formatDate(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = (now - d) / 1000;
+  if(diff < 60) return '刚刚';
+  if(diff < 3600) return Math.floor(diff / 60) + ' 分钟前';
+  if(diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
+  return d.getMonth() + 1 + '/' + d.getDate() + ' ' + d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+}
+
+// 输入框
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+}
+function handleKey(e) {
+  if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  if(e.key === 'ArrowUp' && !e.shiftKey && document.getElementById('input').value === '') {
+    e.preventDefault();
+    const lastUser = [...document.querySelectorAll('.msg.user')].pop();
+    if(lastUser) {
+      const text = lastUser.querySelector('.body').textContent;
+      document.getElementById('input').value = text;
+      autoResize(document.getElementById('input'));
+    }
+  }
+}
+function toggleSetting(el, key) {
+  if(activeSettings.has(key)) {
+    activeSettings.delete(key);
+    el.classList.remove('active');
+  } else {
+    activeSettings.add(key);
+    el.classList.add('active');
+  }
+  updateSettingTags();
+}
+function updateSettingTags() {
+  const container = document.getElementById('activeSettings');
+  container.innerHTML = '';
+  activeSettings.forEach(k => {
+    const tag = document.createElement('div');
+    tag.className = 'setting-tag active';
+    tag.id = 'setting-' + k;
+    const labels = { background: '后台执行', priority: '高优先级', stream: '流式输出' };
+    tag.innerHTML = labels[k] + '<span onclick="removeSetting(\'' + k + '\')" style="margin-left:4px;cursor:pointer">×</span>';
+    container.appendChild(tag);
+  });
+}
+function removeSetting(key) {
+  activeSettings.delete(key);
+  document.querySelector('[onclick*="' + key + '"]')?.classList.remove('active');
+  document.getElementById('setting-' + key)?.remove();
+}
+
+// 文件上传
+function handleFiles(files) {
+  Array.from(files).forEach(f => {
+    uploadedFiles.push(f);
+    const el = document.createElement('div');
+    el.className = 'file-item';
+    el.id = 'file-' + makeId();
+    const size = f.size > 1024 * 1024 ? (f.size / 1024 / 1024).toFixed(1) + ' MB' : (f.size / 1024).toFixed(0) + ' KB';
+    el.innerHTML = '<span>📎</span><span>' + escHtml(f.name) + '</span><span style="color:var(--text2)">(' + size + ')</span><span class="remove" onclick="removeFile(\'' + f.name + '\',this)">×</span>';
+    el.setAttribute('data-filename', f.name);
+    document.getElementById('fileList').appendChild(el);
+  });
+  document.getElementById('fileInput').value = '';
+}
+function removeFile(name, el) {
+  uploadedFiles = uploadedFiles.filter(f => f.name !== name);
+  el.parentElement.remove();
+}
+
+// 消息管理
+let isSending = false;
+const messages = document.getElementById('消息');
+const input = document.getElementById('input');
+const welcome = document.getElementById('welcome');
+
+// 修正messages选择器
+const msgContainer = document.getElementById('messages');
+
+function useShortcut(text) {
+  input.value = text;
+  autoResize(input);
+  sendMessage();
+}
+
+function addMsg(role, text) {
+  if(welcome) welcome.style.display = 'none';
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  const avatar = role === 'user' ? 'U' : '🤖';
+  const now = new Date();
+  const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  let bodyHtml = escHtml(text);
+  // Markdown处理
+  bodyHtml = bodyHtml.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  bodyHtml = bodyHtml.replace(/```(\w+)?\n?([\s\S]+?)```/g, '<pre><code>$2</code></pre>');
+  bodyHtml = bodyHtml.replace(/`([^`]+)`/g, '<code>$1</code>');
+  div.innerHTML = '<div class="avatar">' + avatar + '</div><div class="content"><div class="meta"><strong>' + (role==='user'?'您':'Codex') + '</strong><span>' + timeStr + '</span></div><div class="body">' + bodyHtml + '</div></div>';
+  msgContainer.appendChild(div);
+  msgContainer.scrollTop = msgContainer.scrollHeight;
+}
+
+function addTyping() {
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.id = 'typing-msg';
+  div.innerHTML = '<div class="avatar">🤖</div><div class="content"><div style="display:flex;gap:4px;padding:8px 0"><span style="width:6px;height:6px;background:var(--text2);border-radius:50%;animation:bounce .6s infinite"></span><span style="width:6px;height:6px;background:var(--text2);border-radius:50%;animation:bounce .6s infinite .1s"></span><span style="width:6px;height:6px;background:var(--text2);border-radius:50%;animation:bounce .6s infinite .2s"></span></div></div></div>';
+  msgContainer.appendChild(div);
+  msgContainer.scrollTop = msgContainer.scrollHeight;
+}
+function removeTyping() {
+  const t = document.getElementById('typing-msg');
+  if(t) t.remove();
+}
+
+function sendMessage() {
+  const text = input.value.trim();
+  if(!text || isSending) return;
+  isSending = true;
+  
+  const settings = Array.from(activeSettings);
+  
+  // 保存用户消息
+  addMsg('user', text + (uploadedFiles.length ? ' [附件: ' + uploadedFiles.map(f => f.name).join(', ') + ']' : '') + (settings.length ? ' [设置: ' + settings.join(', ') + ']' : ''));
+  
+  const userMsg = text;
+  const files = uploadedFiles.slice();
+  input.value = '';
+  uploadedFiles = [];
+  document.getElementById('fileList').innerHTML = '';
+  autoResize(input);
+  
+  addTyping();
+  
+  // 调用后端API
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: text,
+      sessionId: currentSessionId,
+      settings: settings,
+      files: files.map(f => f.name)
+    })
+  })
+  .then(async r => {
+    if(r.ok) {
+      const data = await r.json();
+      removeTyping();
+      
+      let reply = data.response || data.message || '消息已接收';
+      if(typeof reply === 'object') reply = JSON.stringify(reply, null, 2);
+      
+      // 更新会话最后消息
+      const sess = sessions.find(s => s.id === currentSessionId);
+      if(sess) {
+        sess.lastMessage = text;
+        saveSessions();
+      }
+      
+      // 添加到历史记录
+      addHistory(text, 'success', '1.2s');
+      
+      addMsg('assistant', reply);
+    } else {
+      throw new Error('API错误: ' + r.status);
+    }
+  })
+  .catch(err => {
+    removeTyping();
+    // 模拟响应
+    setTimeout(() => {
+      removeTyping();
+      let reply = "我收到了您的消息: " + userMsg + "\n\n";
+      reply += "⚡ 当前设置: " + (settings.length ? settings.join(', ') : '默认') + "\n";
+      if(files.length) reply += "📎 附件: " + files.map(f => f.name).join(', ') + "\n";
+      reply += "\n💡 在实际部署中，此请求将被发送到后端AI服务并返回结果。";
+      
+      addMsg('assistant', reply);
+      
+      const sess = sessions.find(s => s.id === currentSessionId);
+      if(sess) {
+        sess.lastMessage = userMsg;
+        saveSessions();
+      }
+      addHistory(userMsg, 'success', '0.8s');
+    }, 600 + Math.random() * 800);
+  })
+  .finally(() => {
+    isSending = false;
+  });
+}
+
+// 加载配置
+fetch('/api/info').then(r => r.json()).then(data => {
+  const cfg = data.config;
+  const parse = (key) => { const m = cfg.match(new RegExp(key + '\\s*=\\s*"?([^\\s"\\n]+)"?')); return m ? m[1] : '-'; };
+  const parseName = () => { const m = cfg.match(/name = "([^"]+)"/); return m ? m[1] : '-'; };
+  document.getElementById('modelName').textContent = parse('model');
+  document.getElementById('providerName').textContent = parseName();
+  document.getElementById('reasoning').textContent = parse('model_reasoning_effort');
+  const ctx = parseInt(parse('model_context_window')||0);
+  document.getElementById('context').textContent = ctx ? (ctx/1000).toFixed(0) + 'K' : '-';
+  document.getElementById('networkStatus').textContent = (data.publicIP ? '公网' : '本地') + ':' + (data.port || '9009');
+  document.getElementById('sessionBadge').textContent = sessions.find(s => s.id === currentSessionId)?.title || '聊天';
+}).catch(() => {});
+</script>
+</body>
+</html>

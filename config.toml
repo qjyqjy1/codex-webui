@@ -1,0 +1,23 @@
+# Codex Web UI Configuration
+# Port 9009 - Max Permissions Mode
+
+model = "gpt-5.3-codex"
+model_reasoning_effort = "xhigh"
+model_context_window = 128000
+
+[server]
+port = 9009
+host = "0.0.0.0"
+max_permissions = true
+auto_confirm = true
+no_permission_prompts = true
+
+[ui]
+language = "zh-CN"
+theme = "dark"
+locale = "zh-CN"
+
+[permissions]
+trust_level = "max"
+auto_grant = true
+confirm_required = false
