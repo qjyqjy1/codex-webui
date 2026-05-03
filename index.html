@@ -114,7 +114,7 @@ border-radius:12px;padding:3px 8px;font-size:11px;color:var(--text2);cursor:poin
 textarea{flex:1;min-width:0;background:none;border:none;color:var(--text);font-size:14px;font-family:inherit;resize:none;outline:none;max-height:150px;line-height:1.5;min-height:24px}
 textarea::placeholder{color:var(--text2)}
 .send-area{display:flex;align-items:center;gap:8px}
-.upload-btn{background:var(--bg);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:6px;cursor:pointer;transition:all .15s;font-size:14px}
+.upload-btn{background:var(--bg);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:8px 10px;cursor:pointer;transition:all .15s;font-size:13px;font-weight:600;white-space:nowrap}
 .upload-btn:hover{border-color:var(--accent);color:var(--accent)}
 .send-btn{background:var(--accent);color:#000;border:none;border-radius:8px;padding:8px 20px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s;white-space:nowrap}
 .send-btn:hover{opacity:.85}
@@ -122,8 +122,10 @@ textarea::placeholder{color:var(--text2)}
 .input-hint{font-size:11px;color:var(--text2);margin-top:6px}
 .input-hint kbd{background:var(--bg3);padding:1px 5px;border-radius:3px;font-size:10px;border:1px solid var(--border)}
 .file-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.file-item{background:var(--bg);border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:12px;display:flex;align-items:center;gap:6px}
-.file-item .remove{color:var(--red);cursor:pointer}
+.file-item{background:var(--bg);border:1px solid var(--border);padding:6px 10px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:8px;min-width:0}
+.file-item-name{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-item-meta{color:var(--text2);font-size:11px}
+.file-item .remove{color:var(--red);cursor:pointer;font-weight:700}
 .status-panel{display:none;border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0}
 .status-panel.visible{display:block}
 .status-panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;cursor:pointer}
@@ -367,9 +369,12 @@ textarea::placeholder{color:var(--text2)}
       <div class="input-wrap">
         <textarea id="input" placeholder="输入消息内容...（Enter 发送，Shift+Enter 换行）" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
         <div class="send-area">
+          <button class="upload-btn" id="uploadBtn" onclick="openAttachmentPicker()">附件</button>
           <button class="send-btn" id="sendBtn" onclick="sendMessage()">发送</button>
         </div>
       </div>
+      <input id="attachmentInput" type="file" multiple style="display:none" onchange="handleAttachmentSelect(event)">
+      <div class="file-list" id="attachmentList"></div>
       <div class="input-hint">
         <kbd>Enter</kbd> 发送消息 · <kbd>Shift</kbd>+<kbd>Enter</kbd> 换行
       </div>
@@ -439,6 +444,7 @@ const state = {
   runStatusPollingTimer: null,
   switchingProviderKey: null,
   providerSaving: false,
+  attachments: [],
   runStatus: {
     visible: false,
     expanded: true,
@@ -454,7 +460,10 @@ const state = {
 
 const input = document.getElementById('input');
 const sendBtn = document.getElementById('sendBtn');
+const uploadBtn = document.getElementById('uploadBtn');
 const msgContainer = document.getElementById('messages');
+const attachmentInput = document.getElementById('attachmentInput');
+const attachmentList = document.getElementById('attachmentList');
 const runStatusPanel = document.getElementById('runStatusPanel');
 const runStatusList = document.getElementById('runStatusList');
 const runStatusBadge = document.getElementById('runStatusBadge');
@@ -513,6 +522,96 @@ function formatClock(iso) {
   return String(date.getHours()).padStart(2, '0') + ':' +
     String(date.getMinutes()).padStart(2, '0') + ':' +
     String(date.getSeconds()).padStart(2, '0');
+}
+
+function formatBytes(bytes) {
+  const value = Number(bytes || 0);
+  if (!value) return '0 B';
+  if (value < 1024) return value + ' B';
+  if (value < 1024 * 1024) return (value / 1024).toFixed(1).replace(/\.0$/, '') + ' KB';
+  return (value / (1024 * 1024)).toFixed(1).replace(/\.0$/, '') + ' MB';
+}
+
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    const chunk = bytes.subarray(index, index + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+
+  return btoa(binary);
+}
+
+function renderAttachmentList() {
+  if (!state.attachments.length) {
+    attachmentList.innerHTML = '';
+    return;
+  }
+
+  attachmentList.innerHTML = state.attachments.map((attachment, index) => `
+    <div class="file-item">
+      <span class="file-item-name">${escHtml(attachment.name)}</span>
+      <span class="file-item-meta">${escHtml(formatBytes(attachment.size))}</span>
+      <span class="remove" onclick="removeAttachment(${index})">×</span>
+    </div>
+  `).join('');
+}
+
+function openAttachmentPicker() {
+  attachmentInput.click();
+}
+
+function removeAttachment(index) {
+  state.attachments.splice(index, 1);
+  renderAttachmentList();
+}
+
+function clearAttachments() {
+  state.attachments = [];
+  attachmentInput.value = '';
+  renderAttachmentList();
+}
+
+function buildClientUserMessage(text, attachments) {
+  if (!attachments.length) {
+    return text;
+  }
+
+  return [
+    text,
+    '',
+    '[附件] ' + attachments.map(item => item.name).join(', '),
+  ].filter(Boolean).join('\n');
+}
+
+async function handleAttachmentSelect(event) {
+  const files = Array.from(event.target.files || []);
+  attachmentInput.value = '';
+  if (!files.length) {
+    return;
+  }
+
+  if (state.attachments.length + files.length > 6) {
+    alert('附件数量不能超过 6 个');
+    return;
+  }
+
+  const nextAttachments = [];
+  for (const file of files) {
+    const buffer = await file.arrayBuffer();
+    nextAttachments.push({
+      name: file.name,
+      mimeType: file.type || '',
+      size: file.size,
+      data: arrayBufferToBase64(buffer),
+    });
+  }
+
+  state.attachments.push(...nextAttachments);
+  renderAttachmentList();
 }
 
 function createIdleRunStatus(sessionId) {
@@ -687,6 +786,7 @@ function startRunStatusPolling() {
 function setSending(isSending) {
   state.isSending = isSending;
   sendBtn.disabled = isSending;
+  uploadBtn.disabled = isSending;
 }
 
 function autoResize(el) {
@@ -1321,15 +1421,23 @@ function useShortcut(text) {
 
 async function sendMessage() {
   const text = input.value.trim();
-  if (!text || state.isSending) return;
+  const attachments = state.attachments.map(item => ({
+    name: item.name,
+    mimeType: item.mimeType,
+    data: item.data,
+  }));
+  const normalizedMessage = text || (attachments.length ? '请查看附件并处理。' : '');
+  const displayMessage = buildClientUserMessage(normalizedMessage, attachments);
+
+  if ((!normalizedMessage && !attachments.length) || state.isSending) return;
   if (!state.currentSessionId) {
     await ensureSession();
   }
 
   setSending(true);
-  setRunStatusData(createPendingRunStatus(text));
+  setRunStatusData(createPendingRunStatus(normalizedMessage));
   startRunStatusPolling();
-  renderMessage('user', text, new Date().toISOString());
+  renderMessage('user', displayMessage, new Date().toISOString());
   addStreamingAssistantMessage();
 
   input.value = '';
@@ -1343,11 +1451,13 @@ async function sendMessage() {
       method: 'POST',
       body: JSON.stringify({
         message: text,
+        attachments,
         sessionId: state.currentSessionId
       })
     }, {
       async onEvent(event) {
         if (event.type === 'accepted' && event.session) {
+          clearAttachments();
           state.currentSessionId = event.session.id;
           localStorage.setItem('codex_current_session', state.currentSessionId);
           if (event.sessionSummary) {

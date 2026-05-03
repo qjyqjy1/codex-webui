@@ -15,17 +15,30 @@ const WORKSPACE_CONFIG_PATH = path.join(__dirname, 'config.toml');
 
 const DATA_DIR = path.join(__dirname, 'data');
 const SESSIONS_DIR = path.join(DATA_DIR, 'sessions');
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
 const RUNTIME_FILE = path.join(DATA_DIR, 'runtime.json');
 const MAX_HISTORY_ITEMS = 100;
 const MAX_RUN_STATUS_ENTRIES = 120;
+const MAX_REQUEST_BODY_BYTES = 15 * 1024 * 1024;
+const MAX_ATTACHMENTS = 6;
+const MAX_TEXT_ATTACHMENT_BYTES = 512 * 1024;
+const MAX_IMAGE_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const SESSION_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 const RUN_STATUSES = new Map();
+const TEXT_ATTACHMENT_EXTENSIONS = new Set([
+  '.txt', '.md', '.markdown', '.js', '.jsx', '.ts', '.tsx', '.json', '.yaml', '.yml',
+  '.toml', '.ini', '.cfg', '.conf', '.sh', '.bash', '.zsh', '.py', '.rb', '.go',
+  '.rs', '.java', '.kt', '.c', '.cc', '.cpp', '.h', '.hpp', '.css', '.scss',
+  '.less', '.html', '.xml', '.sql', '.env', '.gitignore', '.dockerfile', '.log',
+]);
+const IMAGE_ATTACHMENT_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp']);
 
 ensureStorage();
 
 function ensureStorage() {
   fs.mkdirSync(SESSIONS_DIR, { recursive: true });
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
   if (!fs.existsSync(HISTORY_FILE)) {
     writeJson(HISTORY_FILE, []);
   }
@@ -546,13 +559,206 @@ function deriveTitle(prompt) {
   return text || '新会话';
 }
 
+function getFileExtension(fileName) {
+  return path.extname(String(fileName || '')).toLowerCase();
+}
+
+function sanitizeAttachmentName(fileName) {
+  const cleaned = path.basename(String(fileName || 'attachment'))
+    .replace(/[^\w.\-()+\[\] ]+/g, '_')
+    .trim();
+  return cleaned || 'attachment';
+}
+
+function isImageAttachment(mimeType, extension) {
+  return String(mimeType || '').toLowerCase().startsWith('image/') || IMAGE_ATTACHMENT_EXTENSIONS.has(extension);
+}
+
+function isTextAttachment(mimeType, extension) {
+  const normalizedMime = String(mimeType || '').toLowerCase();
+  return normalizedMime.startsWith('text/')
+    || normalizedMime.includes('json')
+    || normalizedMime.includes('xml')
+    || normalizedMime.includes('yaml')
+    || normalizedMime.includes('javascript')
+    || normalizedMime.includes('typescript')
+    || TEXT_ATTACHMENT_EXTENSIONS.has(extension);
+}
+
+function inferCodeFenceLanguage(fileName) {
+  const extension = getFileExtension(fileName);
+  const map = {
+    '.js': 'js',
+    '.jsx': 'jsx',
+    '.ts': 'ts',
+    '.tsx': 'tsx',
+    '.json': 'json',
+    '.md': 'md',
+    '.py': 'python',
+    '.sh': 'bash',
+    '.yml': 'yaml',
+    '.yaml': 'yaml',
+    '.toml': 'toml',
+    '.html': 'html',
+    '.css': 'css',
+    '.xml': 'xml',
+    '.sql': 'sql',
+    '.go': 'go',
+    '.rs': 'rust',
+    '.java': 'java',
+    '.c': 'c',
+    '.cc': 'cpp',
+    '.cpp': 'cpp',
+    '.h': 'c',
+    '.hpp': 'cpp',
+  };
+  return map[extension] || '';
+}
+
+function normalizeAttachmentsInput(attachmentsInput) {
+  if (!attachmentsInput) {
+    return [];
+  }
+
+  if (!Array.isArray(attachmentsInput)) {
+    throw new Error('附件格式无效');
+  }
+
+  if (attachmentsInput.length > MAX_ATTACHMENTS) {
+    throw new Error(`附件数量不能超过 ${MAX_ATTACHMENTS} 个`);
+  }
+
+  return attachmentsInput.map((item, index) => {
+    const name = sanitizeAttachmentName(item?.name || `attachment-${index + 1}`);
+    const mimeType = String(item?.mimeType || '').trim().toLowerCase();
+    const data = String(item?.data || '').trim();
+
+    if (!data) {
+      throw new Error(`附件内容为空：${name}`);
+    }
+
+    return {
+      name,
+      mimeType,
+      data,
+    };
+  });
+}
+
+function buildAttachmentPrompt(message, preparedAttachments) {
+  if (!preparedAttachments || (!preparedAttachments.imageNames.length && !preparedAttachments.textBlocks.length)) {
+    return message;
+  }
+
+  const sections = [message];
+
+  if (preparedAttachments.imageNames.length) {
+    sections.push([
+      '本次消息附带了图片附件，请结合图片内容一起处理：',
+      preparedAttachments.imageNames.map(name => `- ${name}`).join('\n'),
+    ].join('\n'));
+  }
+
+  if (preparedAttachments.textBlocks.length) {
+    sections.push([
+      '本次消息附带了以下文本/代码附件：',
+      preparedAttachments.textBlocks.join('\n\n'),
+    ].join('\n'));
+  }
+
+  return sections.filter(Boolean).join('\n\n');
+}
+
+function buildStoredUserMessage(message, attachments) {
+  if (!attachments || !attachments.length) {
+    return message;
+  }
+
+  return [
+    message,
+    '',
+    `[附件] ${attachments.map(item => item.name).join(', ')}`,
+  ].join('\n');
+}
+
+function normalizeChatMessage(message, attachments) {
+  const trimmedMessage = String(message || '').trim();
+  if (trimmedMessage) {
+    return trimmedMessage;
+  }
+
+  if (attachments && attachments.length) {
+    return '请查看附件并处理。';
+  }
+
+  return '';
+}
+
+function prepareAttachments(attachments) {
+  const normalizedAttachments = normalizeAttachmentsInput(attachments);
+  const prepared = {
+    imagePaths: [],
+    imageNames: [],
+    textBlocks: [],
+    tempPaths: [],
+  };
+
+  for (const attachment of normalizedAttachments) {
+    const bytes = Buffer.from(attachment.data, 'base64');
+    const extension = getFileExtension(attachment.name);
+
+    if (isImageAttachment(attachment.mimeType, extension)) {
+      if (bytes.length > MAX_IMAGE_ATTACHMENT_BYTES) {
+        throw new Error(`图片附件过大：${attachment.name}`);
+      }
+
+      const safeExtension = extension || '.png';
+      const tempFilePath = path.join(UPLOADS_DIR, `${crypto.randomUUID()}${safeExtension}`);
+      fs.writeFileSync(tempFilePath, bytes);
+      prepared.imagePaths.push(tempFilePath);
+      prepared.imageNames.push(attachment.name);
+      prepared.tempPaths.push(tempFilePath);
+      continue;
+    }
+
+    if (!isTextAttachment(attachment.mimeType, extension)) {
+      throw new Error(`暂不支持该附件类型：${attachment.name}`);
+    }
+
+    if (bytes.length > MAX_TEXT_ATTACHMENT_BYTES) {
+      throw new Error(`文本附件过大：${attachment.name}`);
+    }
+
+    const content = bytes.toString('utf8');
+    const language = inferCodeFenceLanguage(attachment.name);
+    prepared.textBlocks.push([
+      `[附件] ${attachment.name}`,
+      `\`\`\`${language}`,
+      content,
+      '```',
+    ].join('\n'));
+  }
+
+  return prepared;
+}
+
+function cleanupPreparedAttachments(preparedAttachments) {
+  for (const tempPath of preparedAttachments?.tempPaths || []) {
+    try {
+      fs.unlinkSync(tempPath);
+    } catch {
+      // Ignore cleanup failures for temporary upload files.
+    }
+  }
+}
+
 function readRequestBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
 
     req.on('data', chunk => {
       body += chunk;
-      if (body.length > 1024 * 1024) {
+      if (body.length > MAX_REQUEST_BODY_BYTES) {
         reject(new Error('请求体过大'));
         req.destroy();
       }
@@ -1215,13 +1421,16 @@ function sanitizeCodexStderr(stderr) {
     .join('\n');
 }
 
-function runCodex(message, threadId, runStatus, hooks) {
+function runCodex(message, threadId, runStatus, hooks, options = {}) {
   return new Promise((resolve, reject) => {
     normalizeCodexConfigFile();
+    const imageArgs = Array.isArray(options.imagePaths)
+      ? options.imagePaths.flatMap(imagePath => ['--image', imagePath])
+      : [];
 
     const args = threadId
-      ? ['exec', 'resume', '--json', '--skip-git-repo-check', threadId, message]
-      : ['exec', '--json', '--skip-git-repo-check', message];
+      ? ['exec', 'resume', '--json', '--skip-git-repo-check', ...imageArgs, '--', threadId, message]
+      : ['exec', '--json', '--skip-git-repo-check', ...imageArgs, '--', message];
 
     const child = spawn(CODEX_BIN, args, {
       cwd: CODEX_WORKDIR,
@@ -1468,11 +1677,14 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'POST' && url.pathname === '/api/chat/stream') {
       const body = await readRequestBody(req);
-      const message = typeof body.message === 'string' ? body.message.trim() : '';
+      const rawMessage = typeof body.message === 'string' ? body.message : '';
       let sessionId = typeof body.sessionId === 'string' ? body.sessionId : '';
+      let preparedAttachments = null;
+      const attachments = normalizeAttachmentsInput(body.attachments);
+      const message = normalizeChatMessage(rawMessage, attachments);
 
       if (!message) {
-        sendJson(res, 400, { success: false, error: '消息不能为空' });
+        sendJson(res, 400, { success: false, error: '消息或附件不能为空' });
         return;
       }
 
@@ -1488,7 +1700,7 @@ const server = http.createServer(async (req, res) => {
 
       session.messages.push({
         role: 'user',
-        content: message,
+        content: buildStoredUserMessage(message, attachments),
         timestamp: new Date().toISOString(),
       });
 
@@ -1521,9 +1733,11 @@ const server = http.createServer(async (req, res) => {
       });
 
       try {
-        const promptForCodex = shouldReplayContext
+        preparedAttachments = prepareAttachments(attachments);
+        const basePrompt = shouldReplayContext
           ? buildSessionReplayPrompt(session)
           : message;
+        const promptForCodex = buildAttachmentPrompt(basePrompt, preparedAttachments);
         const codexResult = await runCodex(
           promptForCodex,
           shouldStartFreshThread ? null : session.codexThreadId,
@@ -1536,6 +1750,9 @@ const server = http.createServer(async (req, res) => {
                 sessionId: session.id,
               });
             },
+          },
+          {
+            imagePaths: preparedAttachments.imagePaths,
           }
         );
 
@@ -1597,6 +1814,8 @@ const server = http.createServer(async (req, res) => {
           session,
           sessionSummary: makeSessionSummary(session),
         });
+      } finally {
+        cleanupPreparedAttachments(preparedAttachments);
       }
 
       res.end();
@@ -1605,11 +1824,14 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'POST' && url.pathname === '/api/chat') {
       const body = await readRequestBody(req);
-      const message = typeof body.message === 'string' ? body.message.trim() : '';
+      const rawMessage = typeof body.message === 'string' ? body.message : '';
       let sessionId = typeof body.sessionId === 'string' ? body.sessionId : '';
+      let preparedAttachments = null;
+      const attachments = normalizeAttachmentsInput(body.attachments);
+      const message = normalizeChatMessage(rawMessage, attachments);
 
       if (!message) {
-        sendJson(res, 400, { success: false, error: '消息不能为空' });
+        sendJson(res, 400, { success: false, error: '消息或附件不能为空' });
         return;
       }
 
@@ -1625,7 +1847,7 @@ const server = http.createServer(async (req, res) => {
       const startedAt = Date.now();
       session.messages.push({
         role: 'user',
-        content: message,
+        content: buildStoredUserMessage(message, attachments),
         timestamp: new Date().toISOString(),
       });
 
@@ -1643,10 +1865,20 @@ const server = http.createServer(async (req, res) => {
       });
 
       try {
-        const promptForCodex = shouldReplayContext
+        preparedAttachments = prepareAttachments(attachments);
+        const basePrompt = shouldReplayContext
           ? buildSessionReplayPrompt(session)
           : message;
-        const codexResult = await runCodex(promptForCodex, shouldStartFreshThread ? null : session.codexThreadId, runStatus);
+        const promptForCodex = buildAttachmentPrompt(basePrompt, preparedAttachments);
+        const codexResult = await runCodex(
+          promptForCodex,
+          shouldStartFreshThread ? null : session.codexThreadId,
+          runStatus,
+          null,
+          {
+            imagePaths: preparedAttachments.imagePaths,
+          }
+        );
 
         session.codexThreadId = codexResult.threadId || session.codexThreadId;
         session.configRevision = currentConfigRevision;
@@ -1704,6 +1936,8 @@ const server = http.createServer(async (req, res) => {
           session,
           sessionSummary: makeSessionSummary(session),
         });
+      } finally {
+        cleanupPreparedAttachments(preparedAttachments);
       }
       return;
     }
