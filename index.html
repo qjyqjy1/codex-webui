@@ -3,22 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Codex Web UI - AI助手</title>
+<title>Codex Web UI - Codex CLI</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
+html{height:100%}
 :root{
   --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;
   --text:#c9d1d9;--text2:#8b949e;--accent:#58a6ff;--green:#3fb950;
   --red:#f85149;--yellow:#d29922;--purple:#bc8cff;
 }
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
 
 /* 顶部工具栏 */
-.topbar{height:48px;min-height:48px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0}
-.topbar .logo{font-size:16px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:8px}
+.topbar{height:48px;min-height:48px;width:100%;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;gap:12px;flex-shrink:0}
+.topbar .logo{font-size:16px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap}
 .topbar .logo .dot{width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-.topbar-actions{display:flex;gap:8px}
+.topbar-actions{display:flex;gap:8px;min-width:0}
 .topbar-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s}
 .topbar-btn:hover{background:var(--bg);border-color:var(--accent);color:var(--accent)}
 .topbar-btn .icon{font-size:14px}
@@ -29,7 +30,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,san
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
 /* 抽屉 */
-.drawer{position:fixed;top:48px;right:0;width:360px;max-width:100%;height:calc(100vh - 48px);background:var(--bg2);border-left:1px solid var(--border);z-index:101;transform:translateX(100%);transition:transform .2s ease;overflow-y:auto}
+.drawer{position:fixed;top:48px;right:0;width:360px;max-width:100%;height:calc(100vh - 48px);height:calc(100dvh - 48px);background:var(--bg2);border-left:1px solid var(--border);z-index:101;transform:translateX(100%);transition:transform .2s ease;overflow-y:auto}
 .drawer.active{transform:translateX(0)}
 .drawer-header{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .drawer-header h3{font-size:16px;font-weight:600}
@@ -65,15 +66,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,san
 .history-item .status.running{background:rgba(210,153,34,.2);color:var(--yellow)}
 
 /* 主内容区 */
-.main-area{display:flex;flex-direction:column;height:100%}
+.main-area{display:flex;flex:1;min-height:0;overflow:hidden}
 
 /* 聊天区域 */
-.chat-area{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.chat-area{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
 .chat-header{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg2);flex-shrink:0}
 .chat-header h2{font-size:14px;font-weight:600}
-.chat-header .badge{background:var(--bg3);border:1px solid var(--border);padding:2px 10px;border-radius:12px;font-size:11px;color:var(--text2)}
+.chat-header .badge{background:var(--bg3);border:1px solid var(--border);padding:2px 10px;border-radius:12px;font-size:11px;color:var(--text2);max-width:45vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
-.msg{display:flex;gap:12px;max-width:900px;animation:msgIn .2s ease}
+.msg{display:flex;gap:12px;max-width:900px;width:100%;animation:msgIn .2s ease}
 @keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .msg .avatar{width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
 .msg.user .avatar{background:var(--accent);color:#000}
@@ -95,8 +96,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,san
 .welcome .shortcut:hover{border-color:var(--accent);color:var(--accent)}
 
 /* 输入框区域 */
-.input-area{padding:16px 20px;border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0}
-.input-toolbar{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.input-area{padding:16px 20px calc(16px + env(safe-area-inset-bottom, 0px));border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+.input-toolbar{display:flex;gap:8px;margin-bottom:8px;align-items:center;flex-wrap:wrap}
 .toolbar-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;font-size:14px;padding:6px 10px;border-radius:6px;display:flex;align-items:center;gap:5px;transition:all .15s}
 .toolbar-btn:hover{background:var(--bg);border-color:var(--accent);color:var(--accent)}
 .toolbar-btn.active{background:var(--accent);color:#000;border-color:var(--accent)}
@@ -110,7 +111,7 @@ border-radius:12px;padding:3px 8px;font-size:11px;color:var(--text2);cursor:poin
 .setting-tag.active::after{content:'✓';font-size:10px}
 .input-wrap{display:flex;gap:10px;align-items:flex-end;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:12px 14px;transition:border-color .15s}
 .input-wrap:focus-within{border-color:var(--accent)}
-textarea{flex:1;background:none;border:none;color:var(--text);font-size:14px;font-family:inherit;resize:none;outline:none;max-height:150px;line-height:1.5;min-height:24px}
+textarea{flex:1;min-width:0;background:none;border:none;color:var(--text);font-size:14px;font-family:inherit;resize:none;outline:none;max-height:150px;line-height:1.5;min-height:24px}
 textarea::placeholder{color:var(--text2)}
 .send-area{display:flex;align-items:center;gap:8px}
 .upload-btn{background:var(--bg);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:6px;cursor:pointer;transition:all .15s;font-size:14px}
@@ -123,9 +124,39 @@ textarea::placeholder{color:var(--text2)}
 .file-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .file-item{background:var(--bg);border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:12px;display:flex;align-items:center;gap:6px}
 .file-item .remove{color:var(--red);cursor:pointer}
+.status-panel{display:none;border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+.status-panel.visible{display:block}
+.status-panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;cursor:pointer}
+.status-panel-main{display:flex;align-items:center;gap:8px;min-width:0}
+.status-panel-chevron{color:var(--text2);font-size:12px;transition:transform .15s}
+.status-panel.expanded .status-panel-chevron{transform:rotate(0)}
+.status-panel:not(.expanded) .status-panel-chevron{transform:rotate(-90deg)}
+.status-panel-title{font-size:13px;font-weight:600}
+.status-panel-badge{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:2px 8px;font-size:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2)}
+.status-panel-badge.running{background:rgba(210,153,34,.12);border-color:rgba(210,153,34,.45);color:var(--yellow)}
+.status-panel-badge.success{background:rgba(63,185,80,.12);border-color:rgba(63,185,80,.45);color:var(--green)}
+.status-panel-badge.failed{background:rgba(248,81,73,.12);border-color:rgba(248,81,73,.45);color:var(--red)}
+.status-panel-badge.idle{background:var(--bg3);border-color:var(--border);color:var(--text2)}
+.status-panel-side{display:flex;align-items:center;gap:10px;min-width:0}
+.status-panel-meta{font-size:11px;color:var(--text2);white-space:nowrap}
+.status-panel-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;padding:4px 6px;border-radius:6px}
+.status-panel-close:hover{background:var(--bg3);color:var(--accent)}
+.status-panel-body{display:none;padding:0 16px 12px}
+.status-panel.expanded .status-panel-body{display:block}
+.status-list{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto}
+.status-empty{background:var(--bg3);border:1px dashed var(--border);border-radius:10px;padding:12px;font-size:12px;color:var(--text2)}
+.status-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.status-item-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.status-item-label{font-size:12px;font-weight:600;color:var(--text)}
+.status-item-time{font-size:10px;color:var(--text2);white-space:nowrap}
+.status-item-detail{margin-top:6px;font-size:11px;line-height:1.6;color:var(--text2);white-space:pre-wrap;word-break:break-all;font-family:'SF Mono',Consolas,monospace}
+.status-item.info{border-color:var(--border)}
+.status-item.success{border-color:rgba(63,185,80,.35)}
+.status-item.warning{border-color:rgba(210,153,34,.35)}
+.status-item.error{border-color:rgba(248,81,73,.35)}
 
 /* 侧边栏 */
-.sidebar{width:240px;min-width:240px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar{width:240px;min-width:240px;height:100%;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
 .sidebar-header{padding:16px;border-bottom:1px solid var(--border)}
 .sidebar-header h1{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
 .sidebar-header h1 .dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
@@ -137,6 +168,45 @@ textarea::placeholder{color:var(--text2)}
 .model-card .value{color:var(--accent);font-weight:600;margin-top:2px}
 .model-card .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .model-card .row:last-child{margin-bottom:0}
+.model-action-btn{width:100%;margin-top:10px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.model-action-btn:hover{border-color:var(--accent);color:var(--accent);background:#10161f}
+.provider-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.provider-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px}
+.provider-item.current{border-color:var(--accent);box-shadow:0 0 0 2px rgba(88,166,255,.16)}
+.provider-head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.provider-main{min-width:0;flex:1}
+.provider-title{font-size:14px;font-weight:600;color:var(--text)}
+.provider-url{font-size:11px;color:var(--text2);margin-top:6px;word-break:break-all}
+.provider-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.provider-badge{display:inline-flex;align-items:center;justify-content:center;background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:3px 8px;font-size:10px;color:var(--text2)}
+.provider-badge.current{background:rgba(88,166,255,.12);border-color:var(--accent);color:var(--accent)}
+.provider-switch-btn{background:var(--accent);color:#000;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.provider-switch-btn:disabled{opacity:.5;cursor:default}
+.provider-note{margin-top:12px;font-size:12px;color:var(--text2);line-height:1.6}
+.provider-empty{margin-top:12px;background:var(--bg3);border:1px dashed var(--border);border-radius:10px;padding:14px;font-size:12px;color:var(--text2);line-height:1.6}
+.provider-subtle{margin-top:10px;font-size:11px;color:var(--text2);line-height:1.6;word-break:break-all}
+.provider-warning-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.provider-warning{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.45);border-radius:10px;padding:10px 12px}
+.provider-warning strong{display:block;font-size:12px;color:#f0c36a;margin-bottom:6px}
+.provider-warning div{font-size:11px;line-height:1.6;color:var(--text)}
+.provider-warning .provider-warning-fix{color:var(--text2)}
+.provider-editor{margin-top:12px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px}
+.provider-editor-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.provider-editor-title{font-size:14px;font-weight:600;color:var(--text)}
+.provider-editor-subtitle{font-size:11px;color:var(--text2);margin-top:4px}
+.provider-editor-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.provider-field{display:flex;flex-direction:column;gap:6px}
+.provider-field span{font-size:11px;color:var(--text2)}
+.provider-field input,.provider-field select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 12px;font-size:13px;outline:none}
+.provider-field input:focus,.provider-field select:focus{border-color:var(--accent)}
+.provider-checkbox{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text)}
+.provider-checkbox input{width:16px;height:16px}
+.provider-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.provider-primary-btn,.provider-secondary-btn,.provider-edit-btn{border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.provider-primary-btn{background:var(--accent);color:#000}
+.provider-secondary-btn{background:var(--bg);border:1px solid var(--border);color:var(--text)}
+.provider-edit-btn{background:var(--bg);border:1px solid var(--border);color:var(--text)}
+.provider-primary-btn:disabled,.provider-secondary-btn:disabled,.provider-edit-btn:disabled{opacity:.5;cursor:default}
 .status-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:5px}
 .status-dot.green{background:var(--green)}
 .status-dot.yellow{background:var(--yellow)}
@@ -148,8 +218,51 @@ textarea::placeholder{color:var(--text2)}
 
 /* 响应式 */
 @media(max-width:768px){
+  .topbar{padding:0 12px}
+  .topbar .logo{font-size:14px;min-width:0}
+  .topbar-actions{gap:6px}
+  .topbar-btn{padding:7px 10px;font-size:12px}
+  .main-area{flex-direction:column}
   .sidebar{display:none}
-  .drawer{width:100vw;right:-100vw}
+  .chat-header{padding:10px 12px}
+  .chat-header h2{font-size:13px}
+  .chat-header .badge{max-width:58vw}
+  .messages{padding:12px;gap:10px}
+  .msg{gap:10px}
+  .msg .avatar{width:30px;height:30px;font-size:12px}
+  .msg .meta{flex-wrap:wrap;gap:6px}
+  .msg .body{font-size:13px}
+  .msg .body pre{padding:10px}
+  .welcome{justify-content:flex-start;padding:28px 16px 20px}
+  .welcome .logo{font-size:42px}
+  .welcome h2{font-size:20px}
+  .welcome p{font-size:14px}
+  .welcome .shortcuts{width:100%;flex-direction:column}
+  .welcome .shortcut{width:100%;text-align:center;padding:12px 14px}
+  .input-area{padding:12px 12px calc(12px + env(safe-area-inset-bottom, 0px))}
+  .input-toolbar{overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
+  .input-settings{display:none}
+  .input-wrap{flex-direction:column;align-items:stretch;padding:10px 12px}
+  textarea{font-size:16px}
+  .send-area{justify-content:flex-end}
+  .send-btn{width:100%}
+  .input-hint{display:none}
+  .status-panel-header{padding:10px 12px;align-items:flex-start;flex-direction:column}
+  .status-panel-side{width:100%;justify-content:space-between}
+  .status-panel-body{padding:0 12px 12px}
+  .drawer{top:0;right:0;width:100vw;max-width:none;height:100vh;height:100dvh;border-left:none}
+  .drawer-header{position:sticky;top:0;background:var(--bg2);z-index:1}
+  .drawer-content{padding:12px 12px calc(16px + env(safe-area-inset-bottom, 0px))}
+  .session-item .actions{display:flex}
+  .provider-head{flex-direction:column}
+  .provider-switch-btn,.provider-edit-btn,.provider-primary-btn,.provider-secondary-btn{width:100%}
+}
+
+@media(max-width:420px){
+  .topbar .logo{font-size:13px}
+  .topbar-btn{padding:7px 8px}
+  .topbar-btn .icon{font-size:13px}
+  .chat-header .badge{max-width:50vw}
 }
 </style>
 </head>
@@ -157,13 +270,16 @@ textarea::placeholder{color:var(--text2)}
 
 <!-- 顶部工具栏 -->
 <div class="topbar">
-  <div class="logo"><span class="dot"></span> Codex AI助手</div>
+  <div class="logo"><span class="dot"></span> Codex Web UI</div>
   <div class="topbar-actions">
+    <button class="topbar-btn" onclick="openDrawer('provider')" id="providerBtn">
+      <span class="icon">⚙️</span> 模型
+    </button>
     <button class="topbar-btn" onclick="openDrawer('session')" id="chatBtn">
-      <span class="icon">💬</span> Chat 会话
+      <span class="icon">💬</span> 会话
     </button>
     <button class="topbar-btn" onclick="openDrawer('history')" id="historyBtn">
-      <span class="icon">📜</span> 运行记录
+      <span class="icon">📜</span> 记录
     </button>
   </div>
 </div>
@@ -173,22 +289,23 @@ textarea::placeholder{color:var(--text2)}
   <div class="sidebar">
     <div class="sidebar-header">
       <h1><span class="dot"></span> Codex</h1>
-      <div class="subtitle">AI 代码助手</div>
+      <div class="subtitle">本机 Codex CLI 会话</div>
     </div>
     <div class="sidebar-section">
       <h3>模型信息</h3>
       <div class="model-card">
         <div class="row"><span class="label">模型</span><span class="value" id="modelName">加载中...</span></div>
-        <div class="row"><span class="label">提供商</span><span class="value" id="providerName">-</span></div>
+        <div class="row"><span class="label">接口</span><span class="value" id="providerName">-</span></div>
         <div class="row"><span class="label">推理</span><span class="value" id="reasoning">-</span></div>
         <div class="row"><span class="label">上下文</span><span class="value" id="context">-</span></div>
         <div class="row"><span class="label">端口</span><span class="value">9009</span></div>
         <div class="row"><span class="label">网络</span><span class="value" id="networkStatus">-</span></div>
+        <button class="model-action-btn" onclick="openDrawer('provider')">修改接口</button>
       </div>
     </div>
     <div style="flex:1"></div>
     <div class="sidebar-section" style="font-size:10px;color:var(--text2);text-align:center">
-      Codex CLI · gpt-5.3-codex
+      <span id="footerVersion">Codex CLI</span>
     </div>
   </div>
 
@@ -201,50 +318,82 @@ textarea::placeholder{color:var(--text2)}
     <div class="messages" id="messages">
       <div class="welcome" id="welcome">
         <div class="logo">⚡</div>
-        <h2>欢迎使用 Codex AI 助手</h2>
-        <p>这是一个集成了会话管理和运行记录的智能编码助手界面</p>
+        <h2>欢迎使用 Codex Web UI</h2>
+        <p>这个界面会直接调用本机 `codex` CLI，所有会话和消息都保存在服务端。</p>
         <div class="shortcuts">
-          <div class="shortcut" onclick="useShortcut('展示项目结构')">📁 项目结构</div>
-          <div class="shortcut" onclick="useShortcut('运行什么模型？')">🤖 模型信息</div>
-          <div class="shortcut" onclick="useShortcut('帮我重构这段代码')">🔧 代码重构</div>
-          <div class="shortcut" onclick="useShortcut('运行测试用例')">🧪 运行测试</div>
+          <div class="shortcut" onclick="useShortcut('请先解释一下当前工作区的结构')">📁 看结构</div>
+          <div class="shortcut" onclick="useShortcut('检查一下这个项目最需要修的地方')">🔎 做检查</div>
+          <div class="shortcut" onclick="useShortcut('给我一个重构建议清单')">🔧 提建议</div>
+          <div class="shortcut" onclick="useShortcut('写一份当前项目的启动说明')">📝 写说明</div>
         </div>
+      </div>
+    </div>
+    <div class="status-panel" id="runStatusPanel">
+      <div class="status-panel-header" onclick="toggleRunStatusExpanded()">
+        <div class="status-panel-main">
+          <span class="status-panel-chevron" id="runStatusChevron">▾</span>
+          <span class="status-panel-title">实时状态</span>
+          <span class="status-panel-badge idle" id="runStatusBadge">空闲</span>
+        </div>
+        <div class="status-panel-side">
+          <span class="status-panel-meta" id="runStatusMeta">暂无运行</span>
+          <button class="status-panel-close" onclick="event.stopPropagation();closeRunStatusPanel()">关闭</button>
+        </div>
+      </div>
+      <div class="status-panel-body">
+        <div class="status-list" id="runStatusList"></div>
       </div>
     </div>
     <div class="input-area">
       <div class="input-toolbar">
-        <div class="setting-tag active" onclick="toggleSetting(this,'background')">
-          <span>后台执行</span>
+        <div class="setting-tag active">
+          <span>已直连 Codex CLI</span>
         </div>
-        <div class="setting-tag" onclick="toggleSetting(this,'priority')">
-          <span>高优先级</span>
+        <div class="setting-tag" id="workspaceTag">
+          <span>工作区加载中...</span>
         </div>
-        <div class="setting-tag" onclick="toggleSetting(this,'stream')">
-          <span>流式输出</span>
-        </div>
-        <div class="toolbar-divider"></div>
+        <button class="toolbar-btn" id="statusToggleBtn" onclick="toggleRunStatusVisibility()">
+          <span>实时状态</span>
+        </button>
       </div>
-      <div class="input-settings" id="activeSettings">
-        <div class="setting-tag active" id="setting-bg">
-          后台执行
-          <span onclick="removeSetting('bg')" style="margin-left:4px;cursor:pointer">×</span>
+      <div class="input-settings">
+        <div class="setting-tag active">
+          会话持久化
+        </div>
+        <div class="setting-tag active">
+          服务端历史记录
         </div>
       </div>
       <div class="input-wrap">
-        <textarea id="input" placeholder="输入消息内容...（支持多行，按 Enter 发送，Shift+Enter 换行）" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <textarea id="input" placeholder="输入消息内容...（Enter 发送，Shift+Enter 换行）" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
         <div class="send-area">
-          <button class="upload-btn" onclick="document.getElementById('fileInput').click()" title="上传附件">
-            📎
-          </button>
-          <input type="file" id="fileInput" multiple style="display:none" onchange="handleFiles(this.files)">
           <button class="send-btn" id="sendBtn" onclick="sendMessage()">发送</button>
         </div>
       </div>
-      <div class="file-list" id="fileList"></div>
       <div class="input-hint">
-        <kbd>Enter</kbd> 发送消息 · <kbd>Shift</kbd>+<kbd>Enter</kbd> 换行 · <kbd>↑</kbd> 历史消息
+        <kbd>Enter</kbd> 发送消息 · <kbd>Shift</kbd>+<kbd>Enter</kbd> 换行
       </div>
     </div>
+  </div>
+</div>
+
+<!-- 聊天会话抽屉 -->
+<div class="drawer-overlay" id="providerOverlay" onclick="closeDrawer('provider')"></div>
+<div class="drawer" id="providerDrawer">
+  <div class="drawer-header">
+    <h3>⚙️ 接口配置</h3>
+    <button class="drawer-close" onclick="closeDrawer('provider')">×</button>
+  </div>
+  <div class="drawer-content">
+    <div class="model-card">
+      <div class="row"><span class="label">当前模型</span><span class="value" id="providerCurrentModel">-</span></div>
+      <div class="row"><span class="label">当前接口</span><span class="value" id="providerCurrentName">-</span></div>
+      <div class="provider-subtle" id="providerConfigPath">配置文件加载中...</div>
+      <div class="provider-warning-list" id="providerWarnings"></div>
+    </div>
+    <div class="provider-editor" id="providerEditorPanel"></div>
+    <div class="provider-list" id="providerList"></div>
+    <div class="provider-note" id="providerHint"></div>
   </div>
 </div>
 
@@ -269,7 +418,7 @@ textarea::placeholder{color:var(--text2)}
 <div class="drawer-overlay" id="historyOverlay" onclick="closeDrawer('history')"></div>
 <div class="drawer" id="historyDrawer">
   <div class="drawer-header">
-    <h3>📜 运行记录</h3>
+    <h3>📜 请求记录</h3>
     <button class="drawer-close" onclick="closeDrawer('history')">×</button>
   </div>
   <div class="drawer-content">
@@ -280,213 +429,889 @@ textarea::placeholder{color:var(--text2)}
 </div>
 
 <script>
-// 数据存储
-let sessions = JSON.parse(localStorage.getItem('codex_sessions') || '[]');
-let currentSessionId = localStorage.getItem('codx_current_session') || null;
-let history = JSON.parse(localStorage.getItem('codx_history') || '[]');
-let uploadedFiles = [];
-let activeSettings = new Set(['background']);
+const state = {
+  sessions: [],
+  history: [],
+  currentSessionId: localStorage.getItem('codex_current_session') || null,
+  currentSession: null,
+  info: null,
+  isSending: false,
+  runStatusPollingTimer: null,
+  switchingProviderKey: null,
+  providerSaving: false,
+  runStatus: {
+    visible: false,
+    expanded: true,
+    dismissedStartedAt: null,
+    data: null,
+  },
+  providerEditor: {
+    mode: 'create',
+    originalKey: null,
+    draft: null
+  }
+};
 
-// 初始化
-if(sessions.length === 0) {
-  sessions.push({
-    id: makeId(),
-    title: '默认会话',
-    createdAt: new Date().toISOString(),
-    lastMessage: null
-  });
-  saveSessions();
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const msgContainer = document.getElementById('messages');
+const runStatusPanel = document.getElementById('runStatusPanel');
+const runStatusList = document.getElementById('runStatusList');
+const runStatusBadge = document.getElementById('runStatusBadge');
+const runStatusMeta = document.getElementById('runStatusMeta');
+const statusToggleBtn = document.getElementById('statusToggleBtn');
+
+function escHtml(value) {
+  const div = document.createElement('div');
+  div.textContent = value == null ? '' : String(value);
+  return div.innerHTML;
 }
-if(!currentSessionId) {
-  currentSessionId = sessions[0].id;
-  localStorage.setItem('codx_current_session', currentSessionId);
+
+function renderMarkdown(text) {
+  let html = escHtml(text || '');
+  html = html.replace(/```(\w+)?\n?([\s\S]+?)```/g, '<pre><code>$2</code></pre>');
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  return html;
 }
 
-// 工具函数
-function makeId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
-function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+async function fetchJson(url, options = {}) {
+  const request = {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    }
+  };
 
-// 抽屉操作
-function openDrawer(type) {
+  const response = await fetch(url, request);
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : {};
+
+  if (!response.ok) {
+    const error = new Error(data.error || ('请求失败: ' + response.status));
+    error.payload = data;
+    throw error;
+  }
+
+  return data;
+}
+
+function formatDate(iso) {
+  if (!iso) return '-';
+  const date = new Date(iso);
+  const diff = (Date.now() - date.getTime()) / 1000;
+  if (diff < 60) return '刚刚';
+  if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前';
+  if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
+  return date.getMonth() + 1 + '/' + date.getDate() + ' ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
+}
+
+function formatClock(iso) {
+  if (!iso) return '--:--:--';
+  const date = new Date(iso);
+  return String(date.getHours()).padStart(2, '0') + ':' +
+    String(date.getMinutes()).padStart(2, '0') + ':' +
+    String(date.getSeconds()).padStart(2, '0');
+}
+
+function createIdleRunStatus(sessionId) {
+  return {
+    sessionId: sessionId || state.currentSessionId || null,
+    status: 'idle',
+    mode: null,
+    startedAt: null,
+    endedAt: null,
+    threadId: null,
+    messagePreview: '',
+    entries: [],
+  };
+}
+
+function createPendingRunStatus(message) {
+  const now = new Date().toISOString();
+  return {
+    sessionId: state.currentSessionId || null,
+    status: 'running',
+    mode: 'pending',
+    startedAt: now,
+    endedAt: null,
+    threadId: null,
+    messagePreview: message || '',
+    entries: [
+      {
+        id: 1,
+        timestamp: now,
+        level: 'info',
+        category: 'system',
+        label: '消息已发送',
+        detail: message || '',
+      },
+      {
+        id: 2,
+        timestamp: now,
+        level: 'info',
+        category: 'system',
+        label: '等待服务端状态',
+        detail: '正在建立本次运行的实时状态流。',
+      }
+    ],
+  };
+}
+
+function getRunStatusBadgeText(status) {
+  if (status === 'running') return '运行中';
+  if (status === 'success') return '已完成';
+  if (status === 'failed') return '失败';
+  return '空闲';
+}
+
+function getRunStatusMeta(runStatus) {
+  if (!runStatus) {
+    return '暂无运行';
+  }
+
+  if (runStatus.status === 'running') {
+    const since = runStatus.startedAt ? formatDate(runStatus.startedAt) : '刚刚';
+    return runStatus.threadId ? `线程 ${runStatus.threadId.slice(-8)} · ${since}` : `运行中 · ${since}`;
+  }
+
+  if (runStatus.status === 'success' || runStatus.status === 'failed') {
+    const finished = runStatus.endedAt ? formatDate(runStatus.endedAt) : '刚刚';
+    return `${runStatus.status === 'success' ? '已结束' : '已失败'} · ${finished}`;
+  }
+
+  return '暂无运行';
+}
+
+function renderRunStatusPanel() {
+  const runStatus = state.runStatus.data || createIdleRunStatus();
+  runStatusPanel.classList.toggle('visible', state.runStatus.visible);
+  runStatusPanel.classList.toggle('expanded', state.runStatus.expanded);
+  runStatusBadge.textContent = getRunStatusBadgeText(runStatus.status);
+  runStatusBadge.className = 'status-panel-badge ' + (runStatus.status || 'idle');
+  runStatusMeta.textContent = getRunStatusMeta(runStatus);
+  statusToggleBtn.classList.toggle('active', state.runStatus.visible);
+  statusToggleBtn.innerHTML = '<span>实时状态</span>';
+
+  if (!runStatus.entries || !runStatus.entries.length) {
+    runStatusList.innerHTML = '<div class="status-empty">当前没有运行中的任务。发送消息后，这里会实时显示命令执行和状态变化。</div>';
+    return;
+  }
+
+  runStatusList.innerHTML = runStatus.entries.map(entry => `
+    <div class="status-item ${escHtml(entry.level || 'info')}">
+      <div class="status-item-head">
+        <div class="status-item-label">${escHtml(entry.label || '状态更新')}</div>
+        <div class="status-item-time">${escHtml(formatClock(entry.timestamp))}</div>
+      </div>
+      ${entry.detail ? `<div class="status-item-detail">${escHtml(entry.detail)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function setRunStatusData(runStatus) {
+  const previousStartedAt = state.runStatus.data?.startedAt || null;
+  state.runStatus.data = runStatus || createIdleRunStatus();
+  const nextStartedAt = state.runStatus.data?.startedAt || null;
+  const isNewRun = nextStartedAt && nextStartedAt !== previousStartedAt;
+
+  if (isNewRun) {
+    state.runStatus.dismissedStartedAt = null;
+  }
+
+  if (state.runStatus.data.status === 'running' && state.runStatus.dismissedStartedAt !== nextStartedAt) {
+    state.runStatus.visible = true;
+  }
+  renderRunStatusPanel();
+}
+
+function toggleRunStatusVisibility() {
+  state.runStatus.visible = !state.runStatus.visible;
+  if (state.runStatus.visible) {
+    state.runStatus.expanded = true;
+    state.runStatus.dismissedStartedAt = null;
+  }
+  renderRunStatusPanel();
+}
+
+function toggleRunStatusExpanded() {
+  if (!state.runStatus.visible) {
+    state.runStatus.visible = true;
+    state.runStatus.expanded = true;
+  } else {
+    state.runStatus.expanded = !state.runStatus.expanded;
+  }
+  renderRunStatusPanel();
+}
+
+function closeRunStatusPanel() {
+  state.runStatus.dismissedStartedAt = state.runStatus.data?.startedAt || null;
+  state.runStatus.visible = false;
+  renderRunStatusPanel();
+}
+
+function stopRunStatusPolling() {
+  if (state.runStatusPollingTimer) {
+    clearInterval(state.runStatusPollingTimer);
+    state.runStatusPollingTimer = null;
+  }
+}
+
+async function refreshRunStatus() {
+  if (!state.currentSessionId) {
+    setRunStatusData(createIdleRunStatus());
+    return;
+  }
+
+  try {
+    const data = await fetchJson('/api/sessions/' + encodeURIComponent(state.currentSessionId) + '/status');
+    setRunStatusData(data.runStatus || createIdleRunStatus(state.currentSessionId));
+    if ((data.runStatus?.status || 'idle') !== 'running') {
+      stopRunStatusPolling();
+    }
+  } catch {
+    // Ignore transient polling errors while the main request is still active.
+  }
+}
+
+function startRunStatusPolling() {
+  stopRunStatusPolling();
+  state.runStatus.visible = true;
+  state.runStatus.expanded = true;
+  renderRunStatusPanel();
+  refreshRunStatus();
+  state.runStatusPollingTimer = setInterval(refreshRunStatus, 1000);
+}
+
+function setSending(isSending) {
+  state.isSending = isSending;
+  sendBtn.disabled = isSending;
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+}
+
+function handleKey(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendMessage();
+  }
+}
+
+async function openDrawer(type) {
   document.getElementById(type + 'Overlay').classList.add('active');
   document.getElementById(type + 'Drawer').classList.add('active');
-  if(type === 'session') renderSessions();
-  if(type === 'history') renderHistory();
+  if (type === 'provider') {
+    await loadInfo();
+    renderProviderDrawer();
+  }
+  if (type === 'session') {
+    await refreshSessions();
+  }
+  if (type === 'history') {
+    await refreshHistory();
+  }
 }
+
 function closeDrawer(type) {
   document.getElementById(type + 'Overlay').classList.remove('active');
   document.getElementById(type + 'Drawer').classList.remove('active');
 }
 
-// 会话管理
+function renderWelcome() {
+  msgContainer.innerHTML = `
+    <div class="welcome" id="welcome">
+      <div class="logo">⚡</div>
+      <h2>欢迎使用 Codex Web UI</h2>
+      <p>当前界面已连接到本机 Codex CLI，可以直接把消息发到服务端会话。</p>
+      <div class="shortcuts">
+        <div class="shortcut" onclick="useShortcut('请先解释一下当前工作区的结构')">📁 看结构</div>
+        <div class="shortcut" onclick="useShortcut('检查一下这个项目最需要修的地方')">🔎 做检查</div>
+        <div class="shortcut" onclick="useShortcut('给我一个重构建议清单')">🔧 提建议</div>
+        <div class="shortcut" onclick="useShortcut('写一份当前项目的启动说明')">📝 写说明</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderMessage(role, text, timestamp) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'msg ' + role;
+
+  const time = timestamp ? new Date(timestamp) : new Date();
+  const timeText = String(time.getHours()).padStart(2, '0') + ':' + String(time.getMinutes()).padStart(2, '0');
+  const avatar = role === 'user' ? 'U' : '🤖';
+  const name = role === 'user' ? '您' : 'Codex';
+
+  wrapper.innerHTML =
+    '<div class="avatar">' + avatar + '</div>' +
+    '<div class="content">' +
+      '<div class="meta"><strong>' + name + '</strong><span>' + timeText + '</span></div>' +
+      '<div class="body">' + renderMarkdown(text) + '</div>' +
+    '</div>';
+
+  msgContainer.appendChild(wrapper);
+}
+
+function addStreamingAssistantMessage() {
+  const welcome = document.getElementById('welcome');
+  if (welcome) {
+    msgContainer.innerHTML = '';
+  }
+
+  removeTyping();
+  document.getElementById('streaming-msg')?.remove();
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'msg assistant';
+  wrapper.id = 'streaming-msg';
+  const now = new Date();
+  const timeText = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+  wrapper.innerHTML =
+    '<div class="avatar">🤖</div>' +
+    '<div class="content">' +
+      '<div class="meta"><strong>Codex</strong><span>' + timeText + '</span><span>流式输出中</span></div>' +
+      '<div class="body" id="streaming-msg-body">处理中...</div>' +
+    '</div>';
+
+  msgContainer.appendChild(wrapper);
+  msgContainer.scrollTop = msgContainer.scrollHeight;
+}
+
+function updateStreamingAssistantMessage(text) {
+  const body = document.getElementById('streaming-msg-body');
+  if (!body) {
+    addStreamingAssistantMessage();
+    return updateStreamingAssistantMessage(text);
+  }
+
+  body.innerHTML = renderMarkdown(text || '处理中...');
+  msgContainer.scrollTop = msgContainer.scrollHeight;
+}
+
+function removeStreamingAssistantMessage() {
+  document.getElementById('streaming-msg')?.remove();
+}
+
+async function streamJsonLines(url, options = {}, handlers = {}) {
+  const request = {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    }
+  };
+
+  const response = await fetch(url, request);
+
+  if (!response.ok) {
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : {};
+    const error = new Error(data.error || ('请求失败: ' + response.status));
+    error.payload = data;
+    throw error;
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new Error('当前浏览器不支持流式响应');
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        continue;
+      }
+
+      const event = JSON.parse(trimmed);
+      if (handlers.onEvent) {
+        await handlers.onEvent(event);
+      }
+    }
+  }
+
+  const tail = buffer.trim();
+  if (tail) {
+    const event = JSON.parse(tail);
+    if (handlers.onEvent) {
+      await handlers.onEvent(event);
+    }
+  }
+}
+
+function renderCurrentSession() {
+  msgContainer.innerHTML = '';
+
+  if (!state.currentSession || !Array.isArray(state.currentSession.messages) || state.currentSession.messages.length === 0) {
+    renderWelcome();
+    return;
+  }
+
+  state.currentSession.messages.forEach(message => {
+    renderMessage(message.role, message.content, message.timestamp);
+  });
+  msgContainer.scrollTop = msgContainer.scrollHeight;
+}
+
+function addTyping() {
+  const welcome = document.getElementById('welcome');
+  if (welcome) {
+    msgContainer.innerHTML = '';
+  }
+
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.id = 'typing-msg';
+  div.innerHTML = '<div class="avatar">🤖</div><div class="content"><div style="display:flex;gap:4px;padding:8px 0"><span style="width:6px;height:6px;background:var(--text2);border-radius:50%;opacity:.8"></span><span style="width:6px;height:6px;background:var(--text2);border-radius:50%;opacity:.6"></span><span style="width:6px;height:6px;background:var(--text2);border-radius:50%;opacity:.4"></span></div></div>';
+  msgContainer.appendChild(div);
+  msgContainer.scrollTop = msgContainer.scrollHeight;
+}
+
+function removeTyping() {
+  document.getElementById('typing-msg')?.remove();
+}
+
 function renderSessions() {
-  const el = document.getElementById('sessionList');
-  el.innerHTML = sessions.map(s => `
-    <div class="session-item ${s.id === currentSessionId ? 'active' : ''}" onclick="switchSession('${s.id}')">
-      <div class="title">${escHtml(s.title)}</div>
-      <div class="meta">${s.lastMessage ? '最后消息: ' + escHtml(s.lastMessage.substring(0,30)) + '...' : '暂无消息'} · ${formatDate(s.createdAt)}</div>
-      <div class="actions">
-        <button onclick="event.stopPropagation();renameSession('${s.id}')">重命名</button>
-        <button onclick="event.stopPropagation();deleteSession('${s.id}')">删除</button>
+  const container = document.getElementById('sessionList');
+  if (!state.sessions.length) {
+    container.innerHTML = '<p style="text-align:center;color:var(--text2);padding:20px;">暂无会话</p>';
+    return;
+  }
+
+  container.innerHTML = state.sessions.map(session => {
+    const preview = session.lastMessage ? escHtml(session.lastMessage.slice(0, 30)) + (session.lastMessage.length > 30 ? '...' : '') : '暂无消息';
+    return `
+      <div class="session-item ${session.id === state.currentSessionId ? 'active' : ''}" onclick="switchSession('${session.id}')">
+        <div class="title">${escHtml(session.title)}</div>
+        <div class="meta">${preview} · ${formatDate(session.updatedAt)} · ${session.messageCount || 0} 条消息</div>
+        <div class="actions">
+          <button onclick="event.stopPropagation();renameSession('${session.id}')">重命名</button>
+          <button onclick="event.stopPropagation();deleteSession('${session.id}')">删除</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderHistory() {
+  const container = document.getElementById('historyList');
+  if (!state.history.length) {
+    container.innerHTML = '<p style="text-align:center;color:var(--text2);padding:20px;">暂无请求记录</p>';
+    return;
+  }
+
+  container.innerHTML = state.history.map((item, index) => `
+    <div class="history-item" onclick="loadHistoryPrompt(${index})">
+      <div class="cmd">${escHtml(item.promptPreview || item.prompt || '')}</div>
+      <div class="meta">
+        ${formatDate(item.timestamp)}
+        <span class="status ${item.status}">${item.status === 'success' ? '✓ 成功' : '✗ 失败'}</span>
+        ${item.durationMs ? ' · ' + item.durationMs + 'ms' : ''}
       </div>
     </div>
   `).join('');
 }
-function newSession() {
-  const title = prompt('请输入新会话名称:', '新会话 ' + (sessions.length + 1));
-  if(!title) return;
-  const s = {
-    id: makeId(),
-    title: title,
-    createdAt: new Date().toISOString(),
-    lastMessage: null
+
+function createProviderDraft(provider) {
+  return {
+    model: state.info?.model || '',
+    baseUrl: provider?.baseUrl || '',
+    setAsCurrent: Boolean(provider?.isCurrent),
+    openAiApiKey: '',
   };
-  sessions.unshift(s);
-  saveSessions();
-  switchSession(s.id);
-  closeDrawer('session');
-  renderSessions();
-}
-function switchSession(id) {
-  currentSessionId = id;
-  localStorage.setItem('codx_current_session', id);
-  renderSessions();
-  document.getElementById('sessionBadge').textContent = sessions.find(s => s.id === id).title;
-  // 清空当前消息
-  document.getElementById('messages').innerHTML = '<div class="welcome"><div class="logo">⚡</div><h2>切换到: ' + escHtml(sessions.find(s => s.id === id).title) + '</h2><p>开始新的对话</p></div>';
-}
-function renameSession(id) {
-  const s = sessions.find(x => x.id === id);
-  const newTitle = prompt('重命名会话:', s.title);
-  if(newTitle && newTitle !== s.title) {
-    s.title = newTitle;
-    saveSessions();
-    renderSessions();
-  }
-}
-function deleteSession(id) {
-  if(sessions.length <= 1) { alert('至少保留一个会话'); return; }
-  if(!confirm('确定删除此会话?')) return;
-  sessions = sessions.filter(s => s.id !== id);
-  if(currentSessionId === id) currentSessionId = sessions[0].id;
-  saveSessions();
-  renderSessions();
-}
-function saveSessions() {
-  localStorage.setItem('codex_sessions', JSON.stringify(sessions));
-  localStorage.setItem('codx_current_session', currentSessionId);
 }
 
-// 运行记录
-function renderHistory() {
-  const el = document.getElementById('historyList');
-  el.innerHTML = history.map(h => `
-    <div class="history-item" onclick="loadHistoryCmd('${escHtml(h.cmd)}')">
-      <div class="cmd">${escHtml(h.cmd)}</div>
-      <div class="meta">
-        ${formatDate(h.timestamp)}
-        <span class="status ${h.status}">${h.status === 'success' ? '✓ 成功' : h.status === 'failed' ? '✗ 失败' : '⟳ 运行中'}</span>
-        ${h.duration ? ' · 耗时 ' + h.duration : ''}
+function ensureProviderEditorDraft() {
+  if (!state.providerEditor.draft) {
+    state.providerEditor.draft = createProviderDraft();
+  }
+}
+
+function updateProviderDraft(field, value) {
+  ensureProviderEditorDraft();
+  state.providerEditor.draft[field] = value;
+}
+
+function updateProviderDraftCheckbox(field, checked) {
+  ensureProviderEditorDraft();
+  state.providerEditor.draft[field] = Boolean(checked);
+}
+
+function startCreateProvider() {
+  state.providerEditor = {
+    mode: 'create',
+    originalKey: null,
+    draft: createProviderDraft()
+  };
+  renderProviderDrawer();
+}
+
+function startEditProvider(encodedKey) {
+  const providerKey = decodeURIComponent(encodedKey);
+  const provider = (state.info?.providers || []).find(item => item.key === providerKey);
+  if (!provider) {
+    return;
+  }
+
+  state.providerEditor = {
+    mode: 'edit',
+    originalKey: provider.key,
+    draft: createProviderDraft(provider)
+  };
+  renderProviderDrawer();
+}
+
+function renderProviderDrawer() {
+  const info = state.info || {};
+  const providers = Array.isArray(info.providers) ? info.providers : [];
+  const warnings = Array.isArray(info.configWarnings) ? info.configWarnings : [];
+  const list = document.getElementById('providerList');
+  const hint = document.getElementById('providerHint');
+  const editorPanel = document.getElementById('providerEditorPanel');
+  const warningList = document.getElementById('providerWarnings');
+  ensureProviderEditorDraft();
+  const draft = state.providerEditor.draft;
+  const isEditMode = state.providerEditor.mode === 'edit';
+  const configSummary = [];
+
+  document.getElementById('providerCurrentModel').textContent = info.model || '-';
+  document.getElementById('providerCurrentName').textContent = info.providerName || '-';
+  if (info.configPath) {
+    configSummary.push('Codex 实际配置：' + info.configPath);
+  }
+  if (info.workspaceConfigPath && info.workspaceConfigPath !== info.configPath) {
+    configSummary.push('工作区 ./config.toml：' + info.workspaceConfigPath + '（仅 Web UI 配置）');
+  }
+  configSummary.push('Auth：' + (info.authPath || '-'));
+  configSummary.push('OPENAI_API_KEY：' + (info.hasOpenAiApiKey ? '已配置' : '未配置'));
+  document.getElementById('providerConfigPath').textContent = configSummary.length
+    ? configSummary.join(' · ')
+    : '未找到 Codex 配置文件';
+  warningList.innerHTML = warnings.map(warning => {
+    const location = warning.path
+      ? escHtml(warning.path + (warning.line ? ':' + warning.line : ''))
+      : '';
+    return `
+      <div class="provider-warning">
+        <strong>配置告警</strong>
+        <div>${escHtml(warning.message || '')}</div>
+        ${location ? `<div>${location}</div>` : ''}
+        <div class="provider-warning-fix">${escHtml(warning.fix || '')}</div>
+      </div>
+    `;
+  }).join('');
+
+  editorPanel.innerHTML = `
+    <div class="provider-editor-head">
+      <div>
+        <div class="provider-editor-title">${isEditMode ? '编辑接口配置' : '新增接口配置'}</div>
+        <div class="provider-editor-subtitle">只保留你需要改的三项。</div>
       </div>
     </div>
-  `).join('') || '<p style="text-align:center;color:var(--text2);padding:20px;">暂无运行记录</p>';
+    <div class="provider-editor-grid">
+      <label class="provider-field">
+        <span>模型名称</span>
+        <input value="${escHtml(draft.model || '')}" placeholder="例如 gpt-5.4 / gpt-5.5" oninput="updateProviderDraft('model', this.value)">
+      </label>
+      <label class="provider-field">
+        <span>接口 URL</span>
+        <input value="${escHtml(draft.baseUrl)}" placeholder="https://example.com/v1" oninput="updateProviderDraft('baseUrl', this.value)">
+      </label>
+      <label class="provider-field">
+        <span>API Key</span>
+        <input type="password" value="${escHtml(draft.openAiApiKey || '')}" placeholder="${info.hasOpenAiApiKey ? '留空表示保留当前 key' : '输入后会写入 auth.json'}" autocomplete="new-password" oninput="updateProviderDraft('openAiApiKey', this.value)">
+      </label>
+      <label class="provider-checkbox">
+        <input type="checkbox" ${draft.setAsCurrent ? 'checked' : ''} onchange="updateProviderDraftCheckbox('setAsCurrent', this.checked)">
+        <span>保存后设为当前接口</span>
+      </label>
+    </div>
+    <div class="provider-actions">
+      <button class="provider-primary-btn" onclick="saveProviderConfig()" ${state.providerSaving ? 'disabled' : ''}>${state.providerSaving ? '保存中...' : isEditMode ? '保存修改' : '新增接口'}</button>
+      <button class="provider-secondary-btn" onclick="startCreateProvider()" ${state.providerSaving ? 'disabled' : ''}>清空新建</button>
+    </div>
+  `;
+
+  if (!providers.length) {
+    list.innerHTML = '<div class="provider-empty">当前还没有可用接口。你可以直接用上面的表单新增一个。</div>';
+    hint.textContent = '上方展示的是 Codex CLI 实际读取的配置文件，不是当前仓库下给 Web UI 自己使用的 ./config.toml。';
+    return;
+  }
+
+  list.innerHTML = providers.map(provider => {
+    const isCurrent = provider.key === info.providerKey;
+    const isBusy = state.switchingProviderKey === provider.key;
+    return `
+      <div class="provider-item ${isCurrent ? 'current' : ''}">
+        <div class="provider-head">
+          <div class="provider-main">
+            <div class="provider-title">${escHtml(provider.displayName || provider.name || provider.key)}</div>
+            <div class="provider-url">${escHtml(provider.baseUrl || '未配置 base_url')}</div>
+            <div class="provider-tags">
+              <span class="provider-badge ${isCurrent ? 'current' : ''}">${isCurrent ? '当前使用中' : '可切换'}</span>
+              ${info.model ? `<span class="provider-badge">${escHtml(info.model)}</span>` : ''}
+            </div>
+          </div>
+          <div class="provider-actions">
+            <button class="provider-edit-btn" onclick="startEditProvider('${encodeURIComponent(provider.key)}')" ${state.providerSaving ? 'disabled' : ''}>编辑</button>
+            <button class="provider-switch-btn" onclick="setProviderByKey('${encodeURIComponent(provider.key)}')" ${isCurrent || isBusy || state.providerSaving ? 'disabled' : ''}>
+              ${isCurrent ? '当前' : isBusy ? '切换中...' : '设为当前'}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  hint.textContent = '上方展示的是 Codex CLI 实际读取的配置文件，不是当前仓库下给 Web UI 自己使用的 ./config.toml。当前页面下一条消息就会按新配置发送；如果这个会话绑着旧线程，系统会自动切到新线程继续。';
 }
-function addHistory(cmd, status, duration) {
-  const now = new Date();
-  history.unshift({ cmd: cmd.substring(0, 500), timestamp: now.toISOString(), status: status, duration: duration || '' });
-  if(history.length > 50) history = history.slice(0, 50);
-  localStorage.setItem('codx_history', JSON.stringify(history));
+
+function updateSessionBadge() {
+  const title = state.currentSession ? state.currentSession.title : (state.sessions[0]?.title || '当前会话');
+  document.getElementById('sessionBadge').textContent = title;
+}
+
+function applyInfo(info) {
+  state.info = info;
+  document.getElementById('modelName').textContent = info.model || '-';
+  document.getElementById('providerName').textContent = info.providerName || '-';
+  document.getElementById('reasoning').textContent = info.reasoningEffort || '-';
+  const ctx = Number.parseInt(info.contextWindow || '0', 10);
+  document.getElementById('context').textContent = ctx ? Math.round(ctx / 1000) + 'K' : '-';
+  const network = (info.lanAddresses && info.lanAddresses.length)
+    ? '局域网:' + info.lanAddresses[0] + ':' + info.port
+    : '本地:' + info.port;
+  document.getElementById('networkStatus').textContent = network;
+  document.getElementById('workspaceTag').innerHTML = '<span>' + escHtml(info.workdir) + '</span>';
+  document.getElementById('footerVersion').textContent = info.version || 'Codex CLI';
+  renderProviderDrawer();
+}
+
+function upsertSessionSummary(summary) {
+  const index = state.sessions.findIndex(item => item.id === summary.id);
+  if (index >= 0) {
+    state.sessions[index] = summary;
+  } else {
+    state.sessions.unshift(summary);
+  }
+  state.sessions.sort((left, right) => new Date(right.updatedAt) - new Date(left.updatedAt));
+}
+
+async function refreshSessions() {
+  state.sessions = await fetchJson('/api/sessions');
+  renderSessions();
+  updateSessionBadge();
+}
+
+async function refreshHistory() {
+  state.history = await fetchJson('/api/history');
   renderHistory();
 }
-function loadHistoryCmd(cmd) {
-  document.getElementById('input').value = cmd;
-  autoResize(document.getElementById('input'));
-  closeDrawer('history');
+
+async function loadInfo() {
+  const info = await fetchJson('/api/info');
+  applyInfo(info);
 }
 
-// 日期格式化
-function formatDate(iso) {
-  const d = new Date(iso);
-  const now = new Date();
-  const diff = (now - d) / 1000;
-  if(diff < 60) return '刚刚';
-  if(diff < 3600) return Math.floor(diff / 60) + ' 分钟前';
-  if(diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
-  return d.getMonth() + 1 + '/' + d.getDate() + ' ' + d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
-}
+async function setProviderByKey(encodedKey) {
+  const providerKey = decodeURIComponent(encodedKey);
+  if (!providerKey || state.switchingProviderKey || state.info?.providerKey === providerKey) {
+    return;
+  }
 
-// 输入框
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 150) + 'px';
-}
-function handleKey(e) {
-  if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  if(e.key === 'ArrowUp' && !e.shiftKey && document.getElementById('input').value === '') {
-    e.preventDefault();
-    const lastUser = [...document.querySelectorAll('.msg.user')].pop();
-    if(lastUser) {
-      const text = lastUser.querySelector('.body').textContent;
-      document.getElementById('input').value = text;
-      autoResize(document.getElementById('input'));
+  state.switchingProviderKey = providerKey;
+  renderProviderDrawer();
+
+  try {
+    const data = await fetchJson('/api/providers/current', {
+      method: 'PATCH',
+      body: JSON.stringify({ providerKey })
+    });
+    if (data.info) {
+      applyInfo(data.info);
+    } else {
+      await loadInfo();
     }
+  } catch (error) {
+    alert('切换接口失败：' + error.message);
+  } finally {
+    state.switchingProviderKey = null;
+    renderProviderDrawer();
   }
 }
-function toggleSetting(el, key) {
-  if(activeSettings.has(key)) {
-    activeSettings.delete(key);
-    el.classList.remove('active');
+
+async function saveProviderConfig() {
+  ensureProviderEditorDraft();
+  if (state.providerSaving) {
+    return;
+  }
+
+  if (!String(state.providerEditor.draft.model || '').trim()) {
+    alert('模型名称不能为空');
+    return;
+  }
+
+  if (!String(state.providerEditor.draft.baseUrl || '').trim()) {
+    alert('接口 URL 不能为空');
+    return;
+  }
+
+  state.providerSaving = true;
+  renderProviderDrawer();
+
+  try {
+    const data = await fetchJson('/api/providers', {
+      method: 'POST',
+      body: JSON.stringify({
+        originalKey: state.providerEditor.originalKey,
+        provider: {
+          baseUrl: state.providerEditor.draft.baseUrl,
+        },
+        model: state.providerEditor.draft.model,
+        setAsCurrent: state.providerEditor.draft.setAsCurrent,
+        openAiApiKey: state.providerEditor.draft.openAiApiKey,
+      })
+    });
+
+    if (data.info) {
+      applyInfo(data.info);
+    } else {
+      await loadInfo();
+    }
+
+    if (data.provider) {
+      state.providerEditor = {
+        mode: 'edit',
+        originalKey: data.provider.key,
+        draft: createProviderDraft(data.provider)
+      };
+    } else {
+      startCreateProvider();
+    }
+  } catch (error) {
+    alert('保存配置失败：' + error.message);
+  } finally {
+    state.providerSaving = false;
+    renderProviderDrawer();
+  }
+}
+
+async function loadSession(id) {
+  const data = await fetchJson('/api/sessions/' + encodeURIComponent(id));
+  state.currentSession = data.session;
+  state.currentSessionId = data.session.id;
+  localStorage.setItem('codex_current_session', state.currentSessionId);
+  upsertSessionSummary(data.sessionSummary);
+  renderSessions();
+  updateSessionBadge();
+  renderCurrentSession();
+  await refreshRunStatus();
+}
+
+async function ensureSession() {
+  await refreshSessions();
+  if (!state.sessions.length) {
+    const created = await fetchJson('/api/sessions', {
+      method: 'POST',
+      body: JSON.stringify({ title: '默认会话' })
+    });
+    upsertSessionSummary(created.sessionSummary);
+    state.currentSession = created.session;
+    state.currentSessionId = created.session.id;
+    localStorage.setItem('codex_current_session', state.currentSessionId);
   } else {
-    activeSettings.add(key);
-    el.classList.add('active');
+    const existing = state.sessions.find(item => item.id === state.currentSessionId) || state.sessions[0];
+    await loadSession(existing.id);
   }
-  updateSettingTags();
+  renderSessions();
+  updateSessionBadge();
+  renderCurrentSession();
+  await refreshRunStatus();
 }
-function updateSettingTags() {
-  const container = document.getElementById('activeSettings');
-  container.innerHTML = '';
-  activeSettings.forEach(k => {
-    const tag = document.createElement('div');
-    tag.className = 'setting-tag active';
-    tag.id = 'setting-' + k;
-    const labels = { background: '后台执行', priority: '高优先级', stream: '流式输出' };
-    tag.innerHTML = labels[k] + '<span onclick="removeSetting(\'' + k + '\')" style="margin-left:4px;cursor:pointer">×</span>';
-    container.appendChild(tag);
+
+async function newSession() {
+  const title = prompt('请输入新会话名称:', '新会话');
+  if (title == null) return;
+  const created = await fetchJson('/api/sessions', {
+    method: 'POST',
+    body: JSON.stringify({ title })
   });
-}
-function removeSetting(key) {
-  activeSettings.delete(key);
-  document.querySelector('[onclick*="' + key + '"]')?.classList.remove('active');
-  document.getElementById('setting-' + key)?.remove();
+  upsertSessionSummary(created.sessionSummary);
+  state.currentSession = created.session;
+  state.currentSessionId = created.session.id;
+  localStorage.setItem('codex_current_session', state.currentSessionId);
+  renderSessions();
+  updateSessionBadge();
+  renderCurrentSession();
+  setRunStatusData(createIdleRunStatus(state.currentSessionId));
+  closeDrawer('session');
 }
 
-// 文件上传
-function handleFiles(files) {
-  Array.from(files).forEach(f => {
-    uploadedFiles.push(f);
-    const el = document.createElement('div');
-    el.className = 'file-item';
-    el.id = 'file-' + makeId();
-    const size = f.size > 1024 * 1024 ? (f.size / 1024 / 1024).toFixed(1) + ' MB' : (f.size / 1024).toFixed(0) + ' KB';
-    el.innerHTML = '<span>📎</span><span>' + escHtml(f.name) + '</span><span style="color:var(--text2)">(' + size + ')</span><span class="remove" onclick="removeFile(\'' + f.name + '\',this)">×</span>';
-    el.setAttribute('data-filename', f.name);
-    document.getElementById('fileList').appendChild(el);
+async function switchSession(id) {
+  await loadSession(id);
+  closeDrawer('session');
+}
+
+async function renameSession(id) {
+  const current = state.sessions.find(item => item.id === id);
+  const title = prompt('重命名会话:', current ? current.title : '新会话');
+  if (title == null) return;
+  const data = await fetchJson('/api/sessions/' + encodeURIComponent(id), {
+    method: 'PATCH',
+    body: JSON.stringify({ title })
   });
-  document.getElementById('fileInput').value = '';
-}
-function removeFile(name, el) {
-  uploadedFiles = uploadedFiles.filter(f => f.name !== name);
-  el.parentElement.remove();
+  upsertSessionSummary(data.sessionSummary);
+  if (state.currentSessionId === id) {
+    state.currentSession = data.session;
+  }
+  renderSessions();
+  updateSessionBadge();
+  renderCurrentSession();
 }
 
-// 消息管理
-let isSending = false;
-const messages = document.getElementById('消息');
-const input = document.getElementById('input');
-const welcome = document.getElementById('welcome');
+async function deleteSession(id) {
+  if (!confirm('确定删除此会话?')) return;
+  await fetchJson('/api/sessions/' + encodeURIComponent(id), { method: 'DELETE' });
+  state.sessions = state.sessions.filter(item => item.id !== id);
 
-// 修正messages选择器
-const msgContainer = document.getElementById('messages');
+  if (!state.sessions.length) {
+    state.currentSession = null;
+    state.currentSessionId = null;
+    await ensureSession();
+  } else if (state.currentSessionId === id) {
+    await loadSession(state.sessions[0].id);
+  }
+
+  renderSessions();
+  updateSessionBadge();
+  renderCurrentSession();
+}
+
+function loadHistoryPrompt(index) {
+  const item = state.history[index];
+  if (!item) return;
+  input.value = item.prompt || item.promptPreview || '';
+  autoResize(input);
+  closeDrawer('history');
+  input.focus();
+}
 
 function useShortcut(text) {
   input.value = text;
@@ -494,127 +1319,148 @@ function useShortcut(text) {
   sendMessage();
 }
 
-function addMsg(role, text) {
-  if(welcome) welcome.style.display = 'none';
-  const div = document.createElement('div');
-  div.className = 'msg ' + role;
-  const avatar = role === 'user' ? 'U' : '🤖';
-  const now = new Date();
-  const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-  let bodyHtml = escHtml(text);
-  // Markdown处理
-  bodyHtml = bodyHtml.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  bodyHtml = bodyHtml.replace(/```(\w+)?\n?([\s\S]+?)```/g, '<pre><code>$2</code></pre>');
-  bodyHtml = bodyHtml.replace(/`([^`]+)`/g, '<code>$1</code>');
-  div.innerHTML = '<div class="avatar">' + avatar + '</div><div class="content"><div class="meta"><strong>' + (role==='user'?'您':'Codex') + '</strong><span>' + timeStr + '</span></div><div class="body">' + bodyHtml + '</div></div>';
-  msgContainer.appendChild(div);
-  msgContainer.scrollTop = msgContainer.scrollHeight;
-}
-
-function addTyping() {
-  const div = document.createElement('div');
-  div.className = 'msg assistant';
-  div.id = 'typing-msg';
-  div.innerHTML = '<div class="avatar">🤖</div><div class="content"><div style="display:flex;gap:4px;padding:8px 0"><span style="width:6px;height:6px;background:var(--text2);border-radius:50%;animation:bounce .6s infinite"></span><span style="width:6px;height:6px;background:var(--text2);border-radius:50%;animation:bounce .6s infinite .1s"></span><span style="width:6px;height:6px;background:var(--text2);border-radius:50%;animation:bounce .6s infinite .2s"></span></div></div></div>';
-  msgContainer.appendChild(div);
-  msgContainer.scrollTop = msgContainer.scrollHeight;
-}
-function removeTyping() {
-  const t = document.getElementById('typing-msg');
-  if(t) t.remove();
-}
-
-function sendMessage() {
+async function sendMessage() {
   const text = input.value.trim();
-  if(!text || isSending) return;
-  isSending = true;
-  
-  const settings = Array.from(activeSettings);
-  
-  // 保存用户消息
-  addMsg('user', text + (uploadedFiles.length ? ' [附件: ' + uploadedFiles.map(f => f.name).join(', ') + ']' : '') + (settings.length ? ' [设置: ' + settings.join(', ') + ']' : ''));
-  
-  const userMsg = text;
-  const files = uploadedFiles.slice();
+  if (!text || state.isSending) return;
+  if (!state.currentSessionId) {
+    await ensureSession();
+  }
+
+  setSending(true);
+  setRunStatusData(createPendingRunStatus(text));
+  startRunStatusPolling();
+  renderMessage('user', text, new Date().toISOString());
+  addStreamingAssistantMessage();
+
   input.value = '';
-  uploadedFiles = [];
-  document.getElementById('fileList').innerHTML = '';
   autoResize(input);
-  
-  addTyping();
-  
-  // 调用后端API
-  fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      message: text,
-      sessionId: currentSessionId,
-      settings: settings,
-      files: files.map(f => f.name)
-    })
-  })
-  .then(async r => {
-    if(r.ok) {
-      const data = await r.json();
-      removeTyping();
-      
-      let reply = data.response || data.message || '消息已接收';
-      if(typeof reply === 'object') reply = JSON.stringify(reply, null, 2);
-      
-      // 更新会话最后消息
-      const sess = sessions.find(s => s.id === currentSessionId);
-      if(sess) {
-        sess.lastMessage = text;
-        saveSessions();
+
+  try {
+    let finalEvent = null;
+    let streamErrorEvent = null;
+
+    await streamJsonLines('/api/chat/stream', {
+      method: 'POST',
+      body: JSON.stringify({
+        message: text,
+        sessionId: state.currentSessionId
+      })
+    }, {
+      async onEvent(event) {
+        if (event.type === 'accepted' && event.session) {
+          state.currentSessionId = event.session.id;
+          localStorage.setItem('codex_current_session', state.currentSessionId);
+          if (event.sessionSummary) {
+            upsertSessionSummary(event.sessionSummary);
+            renderSessions();
+            updateSessionBadge();
+          }
+          return;
+        }
+
+        if (event.type === 'assistant_message') {
+          updateStreamingAssistantMessage(event.text || '');
+          return;
+        }
+
+        if (event.type === 'final') {
+          finalEvent = event;
+          return;
+        }
+
+        if (event.type === 'error') {
+          streamErrorEvent = event;
+        }
       }
-      
-      // 添加到历史记录
-      addHistory(text, 'success', '1.2s');
-      
-      addMsg('assistant', reply);
-    } else {
-      throw new Error('API错误: ' + r.status);
+    });
+
+    removeStreamingAssistantMessage();
+
+    if (streamErrorEvent) {
+      state.currentSession = streamErrorEvent.session;
+      state.currentSessionId = streamErrorEvent.session.id;
+      localStorage.setItem('codex_current_session', state.currentSessionId);
+      if (streamErrorEvent.sessionSummary) {
+        upsertSessionSummary(streamErrorEvent.sessionSummary);
+      }
+      await refreshHistory();
+      renderSessions();
+      updateSessionBadge();
+      renderCurrentSession();
+      await refreshRunStatus();
+      return;
     }
-  })
-  .catch(err => {
-    removeTyping();
-    // 模拟响应
-    setTimeout(() => {
-      removeTyping();
-      let reply = "我收到了您的消息: " + userMsg + "\n\n";
-      reply += "⚡ 当前设置: " + (settings.length ? settings.join(', ') : '默认') + "\n";
-      if(files.length) reply += "📎 附件: " + files.map(f => f.name).join(', ') + "\n";
-      reply += "\n💡 在实际部署中，此请求将被发送到后端AI服务并返回结果。";
-      
-      addMsg('assistant', reply);
-      
-      const sess = sessions.find(s => s.id === currentSessionId);
-      if(sess) {
-        sess.lastMessage = userMsg;
-        saveSessions();
+
+    if (!finalEvent) {
+      throw new Error('流式响应提前结束，未收到最终结果');
+    }
+
+    state.currentSession = finalEvent.session;
+    state.currentSessionId = finalEvent.session.id;
+    localStorage.setItem('codex_current_session', state.currentSessionId);
+    upsertSessionSummary(finalEvent.sessionSummary);
+    if (finalEvent.historyItem) {
+      state.history.unshift(finalEvent.historyItem);
+      state.history = state.history.slice(0, 100);
+    }
+    renderSessions();
+    renderHistory();
+    updateSessionBadge();
+    renderCurrentSession();
+    await refreshRunStatus();
+  } catch (error) {
+    removeStreamingAssistantMessage();
+    if (error.payload && error.payload.session) {
+      state.currentSession = error.payload.session;
+      state.currentSessionId = error.payload.session.id;
+      localStorage.setItem('codex_current_session', state.currentSessionId);
+      if (error.payload.sessionSummary) {
+        upsertSessionSummary(error.payload.sessionSummary);
       }
-      addHistory(userMsg, 'success', '0.8s');
-    }, 600 + Math.random() * 800);
-  })
-  .finally(() => {
-    isSending = false;
-  });
+      await refreshHistory();
+      renderSessions();
+      updateSessionBadge();
+      renderCurrentSession();
+      await refreshRunStatus();
+    } else {
+      renderMessage('assistant', '请求失败：' + error.message, new Date().toISOString());
+      msgContainer.scrollTop = msgContainer.scrollHeight;
+      setRunStatusData({
+        ...(state.runStatus.data || createIdleRunStatus(state.currentSessionId)),
+        status: 'failed',
+        endedAt: new Date().toISOString(),
+        entries: [
+          ...((state.runStatus.data && Array.isArray(state.runStatus.data.entries)) ? state.runStatus.data.entries : []),
+          {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            level: 'error',
+            category: 'error',
+            label: '请求失败',
+            detail: error.message,
+          }
+        ],
+      });
+      stopRunStatusPolling();
+    }
+  } finally {
+    setSending(false);
+    input.focus();
+  }
 }
 
-// 加载配置
-fetch('/api/info').then(r => r.json()).then(data => {
-  const cfg = data.config;
-  const parse = (key) => { const m = cfg.match(new RegExp(key + '\\s*=\\s*"?([^\\s"\\n]+)"?')); return m ? m[1] : '-'; };
-  const parseName = () => { const m = cfg.match(/name = "([^"]+)"/); return m ? m[1] : '-'; };
-  document.getElementById('modelName').textContent = parse('model');
-  document.getElementById('providerName').textContent = parseName();
-  document.getElementById('reasoning').textContent = parse('model_reasoning_effort');
-  const ctx = parseInt(parse('model_context_window')||0);
-  document.getElementById('context').textContent = ctx ? (ctx/1000).toFixed(0) + 'K' : '-';
-  document.getElementById('networkStatus').textContent = (data.publicIP ? '公网' : '本地') + ':' + (data.port || '9009');
-  document.getElementById('sessionBadge').textContent = sessions.find(s => s.id === currentSessionId)?.title || '聊天';
-}).catch(() => {});
+async function bootstrap() {
+  try {
+    await Promise.all([loadInfo(), refreshHistory()]);
+    await ensureSession();
+    renderRunStatusPanel();
+  } catch (error) {
+    renderWelcome();
+    renderMessage('assistant', '初始化失败：' + error.message, new Date().toISOString());
+  }
+}
+
+bootstrap();
 </script>
 </body>
 </html>
