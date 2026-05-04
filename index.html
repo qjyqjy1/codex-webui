@@ -300,6 +300,7 @@ textarea::placeholder{color:var(--text2)}
         <div class="row"><span class="label">接口</span><span class="value" id="providerName">-</span></div>
         <div class="row"><span class="label">推理</span><span class="value" id="reasoning">-</span></div>
         <div class="row"><span class="label">上下文</span><span class="value" id="context">-</span></div>
+        <div class="row"><span class="label">权限</span><span class="value" id="permissionMode">-</span></div>
         <div class="row"><span class="label">端口</span><span class="value">9009</span></div>
         <div class="row"><span class="label">网络</span><span class="value" id="networkStatus">-</span></div>
         <button class="model-action-btn" onclick="openDrawer('provider')">修改接口</button>
@@ -441,14 +442,17 @@ const state = {
   currentSession: null,
   info: null,
   isSending: false,
+  sessionSyncTimer: null,
   runStatusPollingTimer: null,
   switchingProviderKey: null,
   providerSaving: false,
   attachments: [],
+  streamingAssistant: null,
   runStatus: {
     visible: false,
     expanded: true,
     dismissedStartedAt: null,
+    expectedStartedAt: null,
     data: null,
   },
   providerEditor: {
@@ -710,13 +714,30 @@ function renderRunStatusPanel() {
 }
 
 function setRunStatusData(runStatus) {
+  const nextRunStatus = runStatus || createIdleRunStatus();
+  const expectedStartedAt = state.runStatus.expectedStartedAt;
+
+  if (
+    expectedStartedAt &&
+    nextRunStatus.startedAt &&
+    nextRunStatus.startedAt < expectedStartedAt &&
+    nextRunStatus.status !== 'idle'
+  ) {
+    return;
+  }
+
   const previousStartedAt = state.runStatus.data?.startedAt || null;
-  state.runStatus.data = runStatus || createIdleRunStatus();
+  state.runStatus.data = nextRunStatus;
   const nextStartedAt = state.runStatus.data?.startedAt || null;
   const isNewRun = nextStartedAt && nextStartedAt !== previousStartedAt;
 
   if (isNewRun) {
     state.runStatus.dismissedStartedAt = null;
+    state.runStatus.expectedStartedAt = nextStartedAt;
+  }
+
+  if (!nextStartedAt && state.runStatus.data.status === 'idle') {
+    state.runStatus.expectedStartedAt = null;
   }
 
   if (state.runStatus.data.status === 'running' && state.runStatus.dismissedStartedAt !== nextStartedAt) {
@@ -755,6 +776,66 @@ function stopRunStatusPolling() {
     clearInterval(state.runStatusPollingTimer);
     state.runStatusPollingTimer = null;
   }
+}
+
+function stopSessionSync() {
+  if (state.sessionSyncTimer) {
+    clearInterval(state.sessionSyncTimer);
+    state.sessionSyncTimer = null;
+  }
+}
+
+async function refreshCurrentSessionSnapshot(options = {}) {
+  if (!state.currentSessionId) {
+    return null;
+  }
+
+  try {
+    const data = await fetchJson('/api/sessions/' + encodeURIComponent(state.currentSessionId));
+    if (data.session?.id !== state.currentSessionId) {
+      return data;
+    }
+
+    state.currentSession = data.session;
+    if (data.sessionSummary) {
+      upsertSessionSummary(data.sessionSummary);
+    } else {
+      syncCurrentSessionSummary();
+    }
+
+    const lastMessage = getLastSessionMessage(state.currentSession);
+    if (lastMessage?.role === 'assistant' && state.streamingAssistant) {
+      const streamingText = String(state.streamingAssistant.text || '').trim();
+      const persistedText = String(lastMessage.content || '').trim();
+      if (!streamingText || !persistedText || streamingText === persistedText || persistedText.endsWith(streamingText) || streamingText.endsWith(persistedText)) {
+        state.streamingAssistant = null;
+      }
+    }
+
+    if (!options.skipRender) {
+      renderSessions();
+      updateSessionBadge();
+      // 同步期间如果有流式消息，不触发全量重绘
+      if (!state.streamingAssistant) {
+        renderCurrentSession();
+      }
+    }
+
+    return data;
+  } catch (error) {
+    if (!options.silent) {
+      throw error;
+    }
+    return null;
+  }
+}
+
+function startSessionSync() {
+  stopSessionSync();
+  refreshCurrentSessionSnapshot({ silent: true, skipRender: true }).catch(() => {});
+  state.sessionSyncTimer = setInterval(() => {
+    refreshCurrentSessionSnapshot({ silent: true, skipRender: true }).catch(() => {});
+  }, 1500);
 }
 
 async function refreshRunStatus() {
@@ -856,45 +937,171 @@ function renderMessage(role, text, timestamp) {
   msgContainer.appendChild(wrapper);
 }
 
-function addStreamingAssistantMessage() {
-  const welcome = document.getElementById('welcome');
-  if (welcome) {
-    msgContainer.innerHTML = '';
+function createEphemeralSession(sessionId) {
+  const now = new Date().toISOString();
+  const activeSummary = state.sessions.find(item => item.id === (sessionId || state.currentSessionId)) || null;
+
+  return {
+    id: sessionId || state.currentSessionId || crypto.randomUUID(),
+    title: state.currentSession?.title || activeSummary?.title || '当前会话',
+    customTitle: Boolean(state.currentSession?.customTitle || activeSummary?.customTitle),
+    codexThreadId: state.currentSession?.codexThreadId || activeSummary?.codexThreadId || null,
+    configRevision: state.currentSession?.configRevision || 0,
+    createdAt: state.currentSession?.createdAt || activeSummary?.createdAt || now,
+    updatedAt: now,
+    messages: Array.isArray(state.currentSession?.messages)
+      ? state.currentSession.messages.map(message => ({ ...message }))
+      : [],
+  };
+}
+
+function ensureCurrentSessionState(sessionId) {
+  if (!state.currentSession || (sessionId && state.currentSession.id !== sessionId)) {
+    state.currentSession = createEphemeralSession(sessionId);
   }
 
-  removeTyping();
-  document.getElementById('streaming-msg')?.remove();
+  if (sessionId && state.currentSession.id !== sessionId) {
+    state.currentSession.id = sessionId;
+  }
 
+  return state.currentSession;
+}
+
+function getLastSessionMessage(session) {
+  const messages = Array.isArray(session?.messages) ? session.messages : [];
+  return messages.length ? messages[messages.length - 1] : null;
+}
+
+function syncCurrentSessionSummary() {
+  if (!state.currentSession || !state.currentSession.id) {
+    return;
+  }
+
+  const lastUserMessage = [...(state.currentSession.messages || [])]
+    .reverse()
+    .find(item => item.role === 'user' && String(item.content || '').trim());
+  const existingSummary = state.sessions.find(item => item.id === state.currentSession.id) || {};
+
+  upsertSessionSummary({
+    id: state.currentSession.id,
+    title: state.currentSession.title || existingSummary.title || '当前会话',
+    customTitle: Boolean(state.currentSession.customTitle),
+    createdAt: state.currentSession.createdAt || existingSummary.createdAt || new Date().toISOString(),
+    updatedAt: state.currentSession.updatedAt || new Date().toISOString(),
+    codexThreadId: state.currentSession.codexThreadId || null,
+    messageCount: Array.isArray(state.currentSession.messages) ? state.currentSession.messages.length : 0,
+    lastMessage: lastUserMessage ? lastUserMessage.content : existingSummary.lastMessage || '',
+  });
+}
+
+function appendMessageToCurrentSession(role, content, timestamp) {
+  const session = ensureCurrentSessionState(state.currentSessionId);
+  const messageTimestamp = timestamp || new Date().toISOString();
+
+  session.messages = Array.isArray(session.messages) ? session.messages : [];
+  session.messages.push({
+    role,
+    content,
+    timestamp: messageTimestamp,
+  });
+  session.updatedAt = messageTimestamp;
+  syncCurrentSessionSummary();
+}
+
+function renderStreamingAssistantMessage() {
+  if (!state.streamingAssistant) {
+    return;
+  }
+
+  const wrapper = createStreamingAssistantNode();
+  syncStreamingAssistantNode(wrapper);
+  msgContainer.appendChild(wrapper);
+}
+
+function createStreamingAssistantNode() {
   const wrapper = document.createElement('div');
   wrapper.className = 'msg assistant';
   wrapper.id = 'streaming-msg';
-  const now = new Date();
-  const timeText = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-
   wrapper.innerHTML =
     '<div class="avatar">🤖</div>' +
     '<div class="content">' +
-      '<div class="meta"><strong>Codex</strong><span>' + timeText + '</span><span>流式输出中</span></div>' +
-      '<div class="body" id="streaming-msg-body">处理中...</div>' +
+      '<div class="meta"><strong>Codex</strong><span data-streaming-time></span><span data-streaming-label></span></div>' +
+      '<div class="body" data-streaming-body></div>' +
     '</div>';
 
-  msgContainer.appendChild(wrapper);
-  msgContainer.scrollTop = msgContainer.scrollHeight;
+  return wrapper;
 }
 
-function updateStreamingAssistantMessage(text) {
-  const body = document.getElementById('streaming-msg-body');
-  if (!body) {
-    addStreamingAssistantMessage();
-    return updateStreamingAssistantMessage(text);
+function syncStreamingAssistantNode(wrapper) {
+  if (!wrapper || !state.streamingAssistant) {
+    return;
   }
 
-  body.innerHTML = renderMarkdown(text || '处理中...');
+  const time = new Date(state.streamingAssistant.timestamp || Date.now());
+  const timeText = String(time.getHours()).padStart(2, '0') + ':' + String(time.getMinutes()).padStart(2, '0');
+  const statusLabel = state.streamingAssistant.label || '流式输出中';
+  const timeNode = wrapper.querySelector('[data-streaming-time]');
+  const labelNode = wrapper.querySelector('[data-streaming-label]');
+  const bodyNode = wrapper.querySelector('[data-streaming-body]');
+
+  if (timeNode) {
+    timeNode.textContent = timeText;
+  }
+  if (labelNode) {
+    labelNode.textContent = statusLabel;
+  }
+  if (bodyNode) {
+    bodyNode.innerHTML = renderMarkdown(state.streamingAssistant.text || '处理中...');
+  }
+}
+
+function ensureStreamingAssistantNode() {
+  const welcome = document.getElementById('welcome');
+  if (welcome && (!state.currentSession?.messages || state.currentSession.messages.length === 0)) {
+    msgContainer.innerHTML = '';
+  }
+
+  let wrapper = document.getElementById('streaming-msg');
+  if (!wrapper) {
+    wrapper = createStreamingAssistantNode();
+    msgContainer.appendChild(wrapper);
+  }
+
+  syncStreamingAssistantNode(wrapper);
+  return wrapper;
+}
+
+function addStreamingAssistantMessage() {
+  removeTyping();
+  state.streamingAssistant = {
+    text: '处理中...',
+    timestamp: new Date().toISOString(),
+    label: '流式输出中',
+  };
+  ensureStreamingAssistantNode();
   msgContainer.scrollTop = msgContainer.scrollHeight;
 }
 
-function removeStreamingAssistantMessage() {
+function updateStreamingAssistantMessage(text, phase) {
+  if (!state.streamingAssistant) {
+    addStreamingAssistantMessage();
+  }
+
+  state.streamingAssistant = {
+    ...state.streamingAssistant,
+    text: text || state.streamingAssistant.text || '处理中...',
+    label: phase === 'started' ? '生成中' : '流式输出中',
+  };
+  ensureStreamingAssistantNode();
+  msgContainer.scrollTop = msgContainer.scrollHeight;
+}
+
+function removeStreamingAssistantMessage(options = {}) {
+  state.streamingAssistant = null;
   document.getElementById('streaming-msg')?.remove();
+  if (!options.skipRender && (!state.currentSession?.messages || state.currentSession.messages.length === 0)) {
+    renderCurrentSession();
+  }
 }
 
 async function streamJsonLines(url, options = {}, handlers = {}) {
@@ -957,16 +1164,24 @@ async function streamJsonLines(url, options = {}, handlers = {}) {
 }
 
 function renderCurrentSession() {
+  // 流式消息正在进行时，跳过全量重绘，避免闪烁
+  if (state.streamingAssistant) {
+    renderStreamingAssistantMessage();
+    return;
+  }
+
   msgContainer.innerHTML = '';
 
-  if (!state.currentSession || !Array.isArray(state.currentSession.messages) || state.currentSession.messages.length === 0) {
+  const messages = Array.isArray(state.currentSession?.messages) ? state.currentSession.messages : [];
+  if (!messages.length && !state.streamingAssistant) {
     renderWelcome();
     return;
   }
 
-  state.currentSession.messages.forEach(message => {
+  messages.forEach(message => {
     renderMessage(message.role, message.content, message.timestamp);
   });
+  renderStreamingAssistantMessage();
   msgContainer.scrollTop = msgContainer.scrollHeight;
 }
 
@@ -1097,7 +1312,14 @@ function renderProviderDrawer() {
     configSummary.push('Codex 实际配置：' + info.configPath);
   }
   if (info.workspaceConfigPath && info.workspaceConfigPath !== info.configPath) {
-    configSummary.push('工作区 ./config.toml：' + info.workspaceConfigPath + '（仅 Web UI 配置）');
+    configSummary.push(
+      '工作区 ./config.toml：'
+      + info.workspaceConfigPath
+      + (info.runtimePermissions?.usesWorkspaceOverrides ? '（含运行权限覆盖）' : '（仅 Web UI 配置）')
+    );
+  if (info.runtimePermissions?.summary) {
+    configSummary.push('运行权限：' + info.runtimePermissions.summary);
+  }
   }
   configSummary.push('Auth：' + (info.authPath || '-'));
   configSummary.push('OPENAI_API_KEY：' + (info.hasOpenAiApiKey ? '已配置' : '未配置'));
@@ -1151,7 +1373,7 @@ function renderProviderDrawer() {
 
   if (!providers.length) {
     list.innerHTML = '<div class="provider-empty">当前还没有可用接口。你可以直接用上面的表单新增一个。</div>';
-    hint.textContent = '上方展示的是 Codex CLI 实际读取的配置文件，不是当前仓库下给 Web UI 自己使用的 ./config.toml。';
+    hint.textContent = '上方展示的是 Codex CLI 实际读取的配置文件；工作区 ./config.toml 还可以覆盖 Web UI 发起会话时的运行权限。';
     return;
   }
 
@@ -1180,7 +1402,7 @@ function renderProviderDrawer() {
     `;
   }).join('');
 
-  hint.textContent = '上方展示的是 Codex CLI 实际读取的配置文件，不是当前仓库下给 Web UI 自己使用的 ./config.toml。当前页面下一条消息就会按新配置发送；如果这个会话绑着旧线程，系统会自动切到新线程继续。';
+  hint.textContent = '上方展示的是 Codex CLI 实际读取的配置文件；工作区 ./config.toml 还可以覆盖 Web UI 发起会话时的运行权限。当前页面下一条消息就会按新配置发送；如果这个会话绑着旧线程，系统会自动切到新线程继续。';
 }
 
 function updateSessionBadge() {
@@ -1193,6 +1415,7 @@ function applyInfo(info) {
   document.getElementById('modelName').textContent = info.model || '-';
   document.getElementById('providerName').textContent = info.providerName || '-';
   document.getElementById('reasoning').textContent = info.reasoningEffort || '-';
+  document.getElementById('permissionMode').textContent = info.runtimePermissions?.summary || '跟随 Codex CLI 配置';
   const ctx = Number.parseInt(info.contextWindow || '0', 10);
   document.getElementById('context').textContent = ctx ? Math.round(ctx / 1000) + 'K' : '-';
   const network = (info.lanAddresses && info.lanAddresses.length)
@@ -1435,9 +1658,15 @@ async function sendMessage() {
   }
 
   setSending(true);
-  setRunStatusData(createPendingRunStatus(normalizedMessage));
+  const pendingRunStatus = createPendingRunStatus(normalizedMessage);
+  state.runStatus.expectedStartedAt = pendingRunStatus.startedAt;
+  setRunStatusData(pendingRunStatus);
   startRunStatusPolling();
-  renderMessage('user', displayMessage, new Date().toISOString());
+  startSessionSync();
+  appendMessageToCurrentSession('user', displayMessage, new Date().toISOString());
+  renderSessions();
+  updateSessionBadge();
+  renderCurrentSession();
   addStreamingAssistantMessage();
 
   input.value = '';
@@ -1460,16 +1689,38 @@ async function sendMessage() {
           clearAttachments();
           state.currentSessionId = event.session.id;
           localStorage.setItem('codex_current_session', state.currentSessionId);
+          state.currentSession = event.session;
           if (event.sessionSummary) {
             upsertSessionSummary(event.sessionSummary);
-            renderSessions();
-            updateSessionBadge();
           }
+          if (event.runStatus) {
+            setRunStatusData(event.runStatus);
+          }
+          renderSessions();
+          updateSessionBadge();
+          // accepted 后只渲染用户消息到列表，不触发全量重绘
+          msgContainer.innerHTML = '';
+          const messages = Array.isArray(state.currentSession?.messages) ? state.currentSession.messages : [];
+          messages.forEach(message => {
+            renderMessage(message.role, message.content, message.timestamp);
+          });
+          msgContainer.scrollTop = msgContainer.scrollHeight;
           return;
         }
 
         if (event.type === 'assistant_message') {
-          updateStreamingAssistantMessage(event.text || '');
+          updateStreamingAssistantMessage(event.text || '', event.phase);
+          return;
+        }
+
+        if (event.type === 'status_entry' || event.type === 'run_status') {
+          if (event.runStatus) {
+            setRunStatusData(event.runStatus);
+          }
+          return;
+        }
+
+        if (event.type === 'heartbeat') {
           return;
         }
 
@@ -1484,14 +1735,16 @@ async function sendMessage() {
       }
     });
 
-    removeStreamingAssistantMessage();
-
     if (streamErrorEvent) {
+      removeStreamingAssistantMessage({ skipRender: true });
       state.currentSession = streamErrorEvent.session;
       state.currentSessionId = streamErrorEvent.session.id;
       localStorage.setItem('codex_current_session', state.currentSessionId);
       if (streamErrorEvent.sessionSummary) {
         upsertSessionSummary(streamErrorEvent.sessionSummary);
+      }
+      if (streamErrorEvent.runStatus) {
+        setRunStatusData(streamErrorEvent.runStatus);
       }
       await refreshHistory();
       renderSessions();
@@ -1502,13 +1755,28 @@ async function sendMessage() {
     }
 
     if (!finalEvent) {
+      const recovered = await refreshCurrentSessionSnapshot({ silent: true });
+      await refreshRunStatus();
+      const lastMessage = getLastSessionMessage(recovered?.session || state.currentSession);
+      if (lastMessage?.role === 'assistant' || ['success', 'failed'].includes(state.runStatus.data?.status)) {
+        renderSessions();
+        updateSessionBadge();
+        renderCurrentSession();
+        await refreshHistory();
+        return;
+      }
+      removeStreamingAssistantMessage({ skipRender: true });
       throw new Error('流式响应提前结束，未收到最终结果');
     }
 
+    removeStreamingAssistantMessage({ skipRender: true });
     state.currentSession = finalEvent.session;
     state.currentSessionId = finalEvent.session.id;
     localStorage.setItem('codex_current_session', state.currentSessionId);
     upsertSessionSummary(finalEvent.sessionSummary);
+    if (finalEvent.runStatus) {
+      setRunStatusData(finalEvent.runStatus);
+    }
     if (finalEvent.historyItem) {
       state.history.unshift(finalEvent.historyItem);
       state.history = state.history.slice(0, 100);
@@ -1519,7 +1787,7 @@ async function sendMessage() {
     renderCurrentSession();
     await refreshRunStatus();
   } catch (error) {
-    removeStreamingAssistantMessage();
+    removeStreamingAssistantMessage({ skipRender: true });
     if (error.payload && error.payload.session) {
       state.currentSession = error.payload.session;
       state.currentSessionId = error.payload.session.id;
@@ -1527,14 +1795,19 @@ async function sendMessage() {
       if (error.payload.sessionSummary) {
         upsertSessionSummary(error.payload.sessionSummary);
       }
+       if (error.payload.runStatus) {
+        setRunStatusData(error.payload.runStatus);
+      }
       await refreshHistory();
       renderSessions();
       updateSessionBadge();
       renderCurrentSession();
       await refreshRunStatus();
     } else {
-      renderMessage('assistant', '请求失败：' + error.message, new Date().toISOString());
-      msgContainer.scrollTop = msgContainer.scrollHeight;
+      appendMessageToCurrentSession('assistant', '请求失败：' + error.message, new Date().toISOString());
+      renderSessions();
+      updateSessionBadge();
+      renderCurrentSession();
       setRunStatusData({
         ...(state.runStatus.data || createIdleRunStatus(state.currentSessionId)),
         status: 'failed',
@@ -1554,6 +1827,7 @@ async function sendMessage() {
       stopRunStatusPolling();
     }
   } finally {
+    stopSessionSync();
     setSending(false);
     input.focus();
   }

@@ -1,0 +1,21 @@
+{
+  "id": "0367d9e6-c537-4d40-a09e-edb73f6203f2",
+  "title": "只执行这一条 shell 命令，不要解释：setsid sh -lc 'cd /root/.codex/tmp/codex-webui && PORT=9014",
+  "customTitle": false,
+  "codexThreadId": "019ded2b-4595-7431-ba03-1120e81af3e5",
+  "configRevision": 2,
+  "createdAt": "2026-05-03T09:28:48.914Z",
+  "updatedAt": "2026-05-03T09:29:12.935Z",
+  "messages": [
+    {
+      "role": "user",
+      "content": "只执行这一条 shell 命令，不要解释：setsid sh -lc 'cd /root/.codex/tmp/codex-webui && PORT=9014 CODEX_TIMEOUT_MS=0 node server.js > data/server-9014.log 2>&1' >/dev/null 2>&1 & echo started",
+      "timestamp": "2026-05-03T09:28:48.915Z"
+    },
+    {
+      "role": "assistant",
+      "content": "started",
+      "timestamp": "2026-05-03T09:29:12.935Z"
+    }
+  ]
+}

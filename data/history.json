@@ -1,0 +1,532 @@
+[
+  {
+    "id": "2c3249be-4838-4987-8a6a-d40f584e25fa",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "你好，请简单回复测试",
+    "promptPreview": "你好，请简单回复测试",
+    "replyPreview": "",
+    "status": "success",
+    "durationMs": 1677,
+    "timestamp": "2026-05-04T02:10:24.057Z"
+  },
+  {
+    "id": "37c105d6-8b2a-4e35-9d32-f1077fad2e22",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "你好，请用中文简单回复",
+    "promptPreview": "你好，请用中文简单回复",
+    "replyPreview": "",
+    "status": "success",
+    "durationMs": 1632,
+    "timestamp": "2026-05-04T01:18:51.253Z"
+  },
+  {
+    "id": "c8336029-bf36-4e41-a5f6-ee074584f587",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "你好，请简单回复测试",
+    "promptPreview": "你好，请简单回复测试",
+    "replyPreview": "",
+    "status": "success",
+    "durationMs": 2267,
+    "timestamp": "2026-05-04T01:08:48.107Z"
+  },
+  {
+    "id": "9d84c076-7d68-4c22-99a7-1d90bcf3f321",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "你好，请简单回复一下测试",
+    "promptPreview": "你好，请简单回复一下测试",
+    "replyPreview": "Codex 调用失败：Codex 调用失败（退出码 0）",
+    "status": "failed",
+    "durationMs": 2090,
+    "timestamp": "2026-05-03T19:07:15.875Z"
+  },
+  {
+    "id": "9076acaa-7b09-4040-8989-8c0a7cb284e5",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "/stop",
+    "promptPreview": "/stop",
+    "replyPreview": "Codex 调用失败：Codex 调用失败（退出码 0）",
+    "status": "failed",
+    "durationMs": 1624,
+    "timestamp": "2026-05-03T14:34:12.271Z"
+  },
+  {
+    "id": "7bd8c7f5-3679-48ac-abca-f69f42ffce40",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "/stop",
+    "promptPreview": "/stop",
+    "replyPreview": "Codex 调用失败：Codex 调用失败（退出码 0）",
+    "status": "failed",
+    "durationMs": 1639,
+    "timestamp": "2026-05-03T14:33:49.173Z"
+  },
+  {
+    "id": "c26694be-797a-4997-9731-7275dbe1d6bf",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "在不",
+    "promptPreview": "在不",
+    "replyPreview": "Let me check the current state of things.",
+    "status": "success",
+    "durationMs": 20939,
+    "timestamp": "2026-05-03T14:32:24.583Z"
+  },
+  {
+    "id": "67dbf488-1246-4df0-8e34-f7bf7fc69a29",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "你把这个权限给获取到",
+    "promptPreview": "你把这个权限给获取到",
+    "replyPreview": "拿不到。 我刚确认过，不是普通的 Unix 权限问题，而是挂载层面的只读文件系统： - `/usr/lib/node_modules` 写入报 `Read-on",
+    "status": "success",
+    "durationMs": 259466,
+    "timestamp": "2026-05-03T10:13:01.951Z"
+  },
+  {
+    "id": "8f3c5725-7cf5-4ed5-8501-4750b44fe630",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "你怎么安装到你的文件包下面去了，我要你全局安装",
+    "promptPreview": "你怎么安装到你的文件包下面去了，我要你全局安装",
+    "replyPreview": "真正的全局安装我这边做不到，不是我不装，是这层环境把系统全局路径挂成了只读。 我已经确认过两点： - `npm -g` 的真实前缀是 `/usr` - 往全局目",
+    "status": "success",
+    "durationMs": 235152,
+    "timestamp": "2026-05-03T10:00:38.532Z"
+  },
+  {
+    "id": "40807570-1d76-4a83-89c9-14113149219e",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "帮我安装openclaw",
+    "promptPreview": "帮我安装openclaw",
+    "replyPreview": "`OpenClaw` 已经装好了。 现在可以直接用： - `./openclaw --version` - `./openclaw setup --wizard",
+    "status": "success",
+    "durationMs": 460693,
+    "timestamp": "2026-05-03T09:54:23.782Z"
+  },
+  {
+    "id": "9a5d6a63-4ac2-4e83-b7af-80ac1941b41e",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "换",
+    "promptPreview": "换",
+    "replyPreview": "Codex 调用失败：Codex 调用超时（>600000ms）",
+    "status": "failed",
+    "durationMs": 600032,
+    "timestamp": "2026-05-03T09:33:27.714Z"
+  },
+  {
+    "id": "ab6e5f86-fbc8-43d9-91b4-4e34ea8f0be3",
+    "sessionId": "86f38df1-4394-433a-ad98-8a7139647280",
+    "prompt": "只执行这一条 shell 命令并原样返回标准输出，不要解释：bash -lc 'p=$$; for i in 1 2 3 4 5 6; do ps -o pid=,ppid=,cmd= -p $p; p=$(ps -o ppid= -p $p | tr -d \" \" ); [ -n \"$p\" ] || break; done'",
+    "promptPreview": "只执行这一条 shell 命令并原样返回标准输出，不要解释：bash -lc 'p=$$; for i in 1 2 3 4 5 6; do ps -o pid",
+    "replyPreview": "2 1 bash -lc p=$$; for i in 1 2 3 4 5 6; do ps -o pid=,ppid=,cmd= -p $p; p=$(ps ",
+    "status": "success",
+    "durationMs": 80163,
+    "timestamp": "2026-05-03T09:31:41.334Z"
+  },
+  {
+    "id": "59cca211-aedf-473f-9d59-3942803424ea",
+    "sessionId": "0367d9e6-c537-4d40-a09e-edb73f6203f2",
+    "prompt": "只执行这一条 shell 命令，不要解释：setsid sh -lc 'cd /root/.codex/tmp/codex-webui && PORT=9014 CODEX_TIMEOUT_MS=0 node server.js > data/server-9014.log 2>&1' >/dev/null 2>&1 & echo started",
+    "promptPreview": "只执行这一条 shell 命令，不要解释：setsid sh -lc 'cd /root/.codex/tmp/codex-webui && PORT=9014",
+    "replyPreview": "started",
+    "status": "success",
+    "durationMs": 24020,
+    "timestamp": "2026-05-03T09:29:12.935Z"
+  },
+  {
+    "id": "8cfddd89-42a7-47df-a177-34962ebfda0b",
+    "sessionId": "57ff4bc9-9b0b-4397-bc74-0dcb428e055a",
+    "prompt": "只执行这一条 shell 命令，不要解释：nohup sh -lc 'cd /root/.codex/tmp/codex-webui && PORT=9014 CODEX_TIMEOUT_MS=0 node server.js > data/server-9014.log 2>&1' >/dev/null 2>&1 & echo started",
+    "promptPreview": "只执行这一条 shell 命令，不要解释：nohup sh -lc 'cd /root/.codex/tmp/codex-webui && PORT=9014 ",
+    "replyPreview": "started",
+    "status": "success",
+    "durationMs": 15322,
+    "timestamp": "2026-05-03T09:27:25.350Z"
+  },
+  {
+    "id": "4504b038-ab12-4dab-8bc3-4065628b81fd",
+    "sessionId": "7a544dea-dd95-4620-b2f5-4430b7edc20f",
+    "prompt": "只执行这一条 shell 命令并原样返回标准输出，不要解释：sh -lc 'ps -ef | grep -E \"node .*server\\.js|node server\\.js|npm start|9009\" | grep -v grep'",
+    "promptPreview": "只执行这一条 shell 命令并原样返回标准输出，不要解释：sh -lc 'ps -ef | grep -E \"node .*server\\.js|node s",
+    "replyPreview": "Codex 调用失败：2026-05-03T09:26:38.340462Z ERROR codex_core::tools::router: error=Ex",
+    "status": "failed",
+    "durationMs": 11829,
+    "timestamp": "2026-05-03T09:26:42.118Z"
+  },
+  {
+    "id": "11c0dc46-efad-48ed-b882-0eaa539690e6",
+    "sessionId": "fe300ca9-2b00-4711-b8f6-c8cbdf0fb265",
+    "prompt": "只执行这一条 shell 命令并原样返回标准输出，不要解释：sh -lc 'echo PID=$(lsof -t -iTCP:9009 -sTCP:LISTEN); p=$(lsof -t -iTCP:9009 -sTCP:LISTEN | head -n1); if [ -n \"$p\" ]; then ps -fp \"$p\"; fi'",
+    "promptPreview": "只执行这一条 shell 命令并原样返回标准输出，不要解释：sh -lc 'echo PID=$(lsof -t -iTCP:9009 -sTCP:LISTEN",
+    "replyPreview": "PID=",
+    "status": "success",
+    "durationMs": 9700,
+    "timestamp": "2026-05-03T09:24:55.390Z"
+  },
+  {
+    "id": "7ec84d17-dde8-4d7c-b62a-688e6d79cd16",
+    "sessionId": "a30b1045-e455-4c87-b170-c90b573d8598",
+    "prompt": "只回复OK",
+    "promptPreview": "只回复OK",
+    "replyPreview": "OK",
+    "status": "success",
+    "durationMs": 3169,
+    "timestamp": "2026-05-03T09:23:51.227Z"
+  },
+  {
+    "id": "d86b9395-b734-43ac-96e0-e1813e20cf02",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "好了不",
+    "promptPreview": "好了不",
+    "replyPreview": "最新这个“新任务开始后，实时状态还接着老记录往下堆”的问题已经好了。 我已经在前端加了“只接受当前这轮任务状态”的过滤，旧任务的慢回包不会再把新任务面板覆盖回来",
+    "status": "success",
+    "durationMs": 14794,
+    "timestamp": "2026-05-03T09:21:58.960Z"
+  },
+  {
+    "id": "1d547136-cd27-4110-a2fc-448c3eaaff29",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "你赶紧重启啊",
+    "promptPreview": "你赶紧重启啊",
+    "replyPreview": "Codex 调用失败：Codex 调用超时（>600000ms）",
+    "status": "failed",
+    "durationMs": 600023,
+    "timestamp": "2026-05-03T09:06:04.686Z"
+  },
+  {
+    "id": "93d7ebaa-fa4f-4de4-8a7f-69fe869af0c9",
+    "sessionId": "ac2c9745-a95f-4c1b-8061-3cf184e5f809",
+    "prompt": "只回复OK",
+    "promptPreview": "只回复OK",
+    "replyPreview": "OK",
+    "status": "success",
+    "durationMs": 3221,
+    "timestamp": "2026-05-03T09:05:59.786Z"
+  },
+  {
+    "id": "f366fd0a-9854-4420-b869-a12db77fc7da",
+    "sessionId": "a0b2fb81-58b6-4f47-bd4e-299a4bd5c03d",
+    "prompt": "只执行这一条 shell 命令，不要做其他修改，也不要解释：old=$(lsof -t -iTCP:9009 -sTCP:LISTEN); nohup sh -c 'sleep 1; cd /root/.codex/tmp/codex-webui && exec env CODEX_TIMEOUT_MS=0 node server.js > data/server-runtime.log 2>&1' >/dev/null 2>&1 & if [ -n \"$old\" ]; then kill -TERM \"$old\"; fi。执行后如果当前连接断开是正常现象。",
+    "promptPreview": "只执行这一条 shell 命令，不要做其他修改，也不要解释：old=$(lsof -t -iTCP:9009 -sTCP:LISTEN); nohup sh -",
+    "replyPreview": "已执行",
+    "status": "success",
+    "durationMs": 15145,
+    "timestamp": "2026-05-03T09:05:50.557Z"
+  },
+  {
+    "id": "d9086875-77ba-43e4-a0f4-488d660b2e9d",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "实时状态里的问题是，一个任务结束了，，，在新任务接到之后没有清空记录，导致在老记录下方持续堆积",
+    "promptPreview": "实时状态里的问题是，一个任务结束了，，，在新任务接到之后没有清空记录，导致在老记录下方持续堆积",
+    "replyPreview": "这个问题我已经补了，原因就是上一轮任务的慢轮询结果会把新任务刚清空的状态面板又覆盖回来。 修复点在 [index.html](/root/.codex/tmp/",
+    "status": "success",
+    "durationMs": 154487,
+    "timestamp": "2026-05-03T09:05:12.333Z"
+  },
+  {
+    "id": "aaea78e8-9b7e-4c39-9b0f-28f2aab740b2",
+    "sessionId": "d053ca72-8456-4fbd-92b6-b4b5a19e0f05",
+    "prompt": "只回复OK",
+    "promptPreview": "只回复OK",
+    "replyPreview": "OK",
+    "status": "success",
+    "durationMs": 3513,
+    "timestamp": "2026-05-03T09:04:00.334Z"
+  },
+  {
+    "id": "627de762-ce77-4401-9281-3f5e80909584",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "？？？？？",
+    "promptPreview": "？？？？？",
+    "replyPreview": "`9009` 现在已经在直接返回最新的前端代码了，所以你刚才这个“实时刷消息时整块页面跟着重绘”的修复，不需要重启服务，浏览器硬刷新一次就会生效。刚才我已经从 ",
+    "status": "success",
+    "durationMs": 267644,
+    "timestamp": "2026-05-03T09:03:54.716Z"
+  },
+  {
+    "id": "bfe461d3-818b-4e0e-ab62-3de97c6baa3d",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "？？？？？",
+    "promptPreview": "？？？？？",
+    "replyPreview": "我这边确认了：当前占着 `9009` 的那份进程对我这个环境是不可见的，`netstat` 只能看到 `LISTEN`，拿不到 PID，`lsof/fuser/",
+    "status": "success",
+    "durationMs": 222152,
+    "timestamp": "2026-05-03T09:00:42.796Z"
+  },
+  {
+    "id": "29f246c5-23c7-4451-8c99-f1d7310bf28c",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "最新的问题，你实时刷新消息的时候，连带整个页面也在刷新",
+    "promptPreview": "最新的问题，你实时刷新消息的时候，连带整个页面也在刷新",
+    "replyPreview": "问题找到了，不是浏览器真的整页 `reload`，是前端把“实时更新”写成了“整块重绘”。 我已经改了两处： - 流式消息不再每来一段就 `renderCurr",
+    "status": "success",
+    "durationMs": 193583,
+    "timestamp": "2026-05-03T08:52:52.502Z"
+  },
+  {
+    "id": "371892c2-bfc3-4fb9-b367-687a163933d6",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "关闭服务端超时",
+    "promptPreview": "关闭服务端超时",
+    "replyPreview": "服务端超时已经默认关闭了。[server.js](/root/.codex/tmp/codex-webui/server.js:8) 现在在没传 `CODEX_",
+    "status": "success",
+    "durationMs": 55789,
+    "timestamp": "2026-05-03T08:49:23.338Z"
+  },
+  {
+    "id": "4592ed5a-f1e5-4222-b3b6-96359e104449",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "好了不",
+    "promptPreview": "好了不",
+    "replyPreview": "代码已经改完了，重点是两块。 `9009` 的聊天页现在不再只靠结束后整页重刷来更新了。`/api/chat/stream` 会直接推 `accepted`、`",
+    "status": "success",
+    "durationMs": 423360,
+    "timestamp": "2026-05-03T08:46:54.514Z"
+  },
+  {
+    "id": "411dc4af-7969-4514-aacb-a1effbbac3d7",
+    "sessionId": "e3fbcef6-f0c9-449b-9a28-583806a29c36",
+    "prompt": "只回复OK",
+    "promptPreview": "只回复OK",
+    "replyPreview": "Codex 调用失败：WARNING: proceeding, even though we could not update PATH: Read-only ",
+    "status": "failed",
+    "durationMs": 516,
+    "timestamp": "2026-05-03T08:44:48.335Z"
+  },
+  {
+    "id": "28c0f5c0-6f1d-4206-9b15-2554d7b4ff6b",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "继续，你又超时了，优化完后把你这个超时的问题也解决一下",
+    "promptPreview": "继续，你又超时了，优化完后把你这个超时的问题也解决一下",
+    "replyPreview": "Codex 调用失败：Codex 调用超时（>600000ms）",
+    "status": "failed",
+    "durationMs": 600009,
+    "timestamp": "2026-05-03T08:42:05.784Z"
+  },
+  {
+    "id": "5955f02d-7253-4612-8f83-a4cfa2dfb831",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "接下来继续优化你这个9009的ui窗口吧，消息不是实时反馈的，有时候你任务都完成了，我这边也看不到，需要刷新才能看见，，，，实时状态里也是一样",
+    "promptPreview": "接下来继续优化你这个9009的ui窗口吧，消息不是实时反馈的，有时候你任务都完成了，我这边也看不到，需要刷新才能看见，，，，实时状态里也是一样",
+    "replyPreview": "Codex 调用失败：Codex 调用超时（>600000ms）",
+    "status": "failed",
+    "durationMs": 600026,
+    "timestamp": "2026-05-03T08:26:13.701Z"
+  },
+  {
+    "id": "705a3be9-d49a-4276-a189-cc79095284b3",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "你不用反代到9009这个端口，就80端口，后续我要安装openclaw，我要通过域名访问openclaw",
+    "promptPreview": "你不用反代到9009这个端口，就80端口，后续我要安装openclaw，我要通过域名访问openclaw",
+    "replyPreview": "我已经按这个方向改了。现在 [server.js](/root/.codex/tmp/codex-webui/server.js:8) 启动时只监听 `9009",
+    "status": "success",
+    "durationMs": 269575,
+    "timestamp": "2026-05-03T08:14:06.838Z"
+  },
+  {
+    "id": "d1f4dea7-a3e2-467e-bbac-41c161732111",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "？？？？你怎么超时了",
+    "promptPreview": "？？？？你怎么超时了",
+    "replyPreview": "上次是请求撞上了默认的 `600000ms` 超时，不是反代逻辑本身有问题。 我已经把反代并进主服务了：启动 [server.js](/root/.codex/",
+    "status": "success",
+    "durationMs": 503720,
+    "timestamp": "2026-05-03T08:09:00.643Z"
+  },
+  {
+    "id": "0f0d93f0-d54a-4b3f-bc8e-7327354e8cbf",
+    "sessionId": "84944fdc-feff-4b22-a312-ffa299389949",
+    "prompt": "longxiaui.xyz已经解析到本机了，你反代一下吧",
+    "promptPreview": "longxiaui.xyz已经解析到本机了，你反代一下吧",
+    "replyPreview": "Codex 调用失败：Codex 调用超时（>600000ms）",
+    "status": "failed",
+    "durationMs": 600009,
+    "timestamp": "2026-05-03T07:59:01.199Z"
+  },
+  {
+    "id": "68f41641-aaee-46aa-9069-4f69aca6ff5d",
+    "sessionId": "648545d4-6c8b-411d-8dff-ffe91c3c9568",
+    "prompt": "忽略图片内容，只回复 IMAGE_ATTACHMENT_OK",
+    "promptPreview": "忽略图片内容，只回复 IMAGE_ATTACHMENT_OK",
+    "replyPreview": "IMAGE_ATTACHMENT_OK",
+    "status": "success",
+    "durationMs": 5314,
+    "timestamp": "2026-05-03T07:27:58.611Z"
+  },
+  {
+    "id": "fa52a067-4c8c-45cd-90fc-b8b9d8eeaf4e",
+    "sessionId": "66897288-f43d-4b65-836a-1646876d8fd5",
+    "prompt": "请查看附件并处理。",
+    "promptPreview": "请查看附件并处理。",
+    "replyPreview": "ATTACHMENT_OK_2",
+    "status": "success",
+    "durationMs": 4883,
+    "timestamp": "2026-05-03T07:27:58.170Z"
+  },
+  {
+    "id": "a8583c61-f889-4a35-bf1b-49beef220f67",
+    "sessionId": "7c5fcb87-3593-4bad-bb14-630a8f8840d5",
+    "prompt": "忽略图片内容，只回复 IMAGE_ATTACHMENT_OK",
+    "promptPreview": "忽略图片内容，只回复 IMAGE_ATTACHMENT_OK",
+    "replyPreview": "Codex 调用失败：Reading prompt from stdin... No prompt provided via stdin.",
+    "status": "failed",
+    "durationMs": 217,
+    "timestamp": "2026-05-03T07:26:46.751Z"
+  },
+  {
+    "id": "4b2abe22-9b18-4d12-ae92-4752afa11c35",
+    "sessionId": "1159fd51-8692-4023-a057-26d10eb9924f",
+    "prompt": "请查看附件并处理。",
+    "promptPreview": "请查看附件并处理。",
+    "replyPreview": "STREAM_ATTACHMENT_OK",
+    "status": "success",
+    "durationMs": 3487,
+    "timestamp": "2026-05-03T07:26:33.316Z"
+  },
+  {
+    "id": "e3975956-a858-4399-b9ca-dd065a47945a",
+    "sessionId": "88e206d2-009f-49d9-b8a4-c856d984f874",
+    "prompt": "请查看附件并处理。",
+    "promptPreview": "请查看附件并处理。",
+    "replyPreview": "ATTACHMENT_OK",
+    "status": "success",
+    "durationMs": 4186,
+    "timestamp": "2026-05-03T07:26:20.580Z"
+  },
+  {
+    "id": "9efd9820-8461-43ac-9506-9df85a2f5112",
+    "sessionId": "07db12be-bc25-43d0-847f-8fc8de8ba2e8",
+    "prompt": "请查看当前工作目录，并读取 server.js 前 3 行，然后只用一句话汇总。",
+    "promptPreview": "请查看当前工作目录，并读取 server.js 前 3 行，然后只用一句话汇总。",
+    "replyPreview": "当前工作目录是 `/root/.codex/tmp/codex-webui`，而 `server.js` 的前 3 行显示它是一个使用 Node.js 原生 `",
+    "status": "success",
+    "durationMs": 11958,
+    "timestamp": "2026-05-03T07:00:45.005Z"
+  },
+  {
+    "id": "d92b9206-f390-4cc9-948f-06b2675de7b8",
+    "sessionId": "07db12be-bc25-43d0-847f-8fc8de8ba2e8",
+    "prompt": "请查看当前工作目录，并读取 server.js 前 3 行，然后只用一句话汇总。",
+    "promptPreview": "请查看当前工作目录，并读取 server.js 前 3 行，然后只用一句话汇总。",
+    "replyPreview": "当前工作目录是 `/root/.codex/tmp/codex-webui`，`server.js` 的前 3 行表明它是一个基于 Node.js、直接引入 `",
+    "status": "success",
+    "durationMs": 12923,
+    "timestamp": "2026-05-03T06:47:59.340Z"
+  },
+  {
+    "id": "fc66c3f3-5a20-47ce-bf4f-e1ec172f0212",
+    "sessionId": "9e2a8845-6a93-4ca2-ac1a-b32e7312c829",
+    "prompt": "请只回复：当前会话已切新线程",
+    "promptPreview": "请只回复：当前会话已切新线程",
+    "replyPreview": "当前会话已切新线程",
+    "status": "success",
+    "durationMs": 5272,
+    "timestamp": "2026-05-03T06:25:17.494Z"
+  },
+  {
+    "id": "ef3c33f9-3e43-4ec5-92be-49444316ccbd",
+    "sessionId": "9e2a8845-6a93-4ca2-ac1a-b32e7312c829",
+    "prompt": "请只回复：配置正常",
+    "promptPreview": "请只回复：配置正常",
+    "replyPreview": "配置正常",
+    "status": "success",
+    "durationMs": 3653,
+    "timestamp": "2026-05-03T06:15:50.373Z"
+  },
+  {
+    "id": "0fed7260-fce7-441c-b780-6e2565b43ecf",
+    "sessionId": "498be9dc-1530-4c4d-ad87-04ad38da96fe",
+    "prompt": "请只回复：已修复",
+    "promptPreview": "请只回复：已修复",
+    "replyPreview": "已修复",
+    "status": "success",
+    "durationMs": 4101,
+    "timestamp": "2026-05-03T05:59:57.067Z"
+  },
+  {
+    "id": "d71219fb-68e1-4597-86d0-9d61dfcc9f1a",
+    "sessionId": "07db12be-bc25-43d0-847f-8fc8de8ba2e8",
+    "prompt": "在不",
+    "promptPreview": "在不",
+    "replyPreview": "只看到了“在不”，内容还是不完整。 直接把完整需求发来，我继续处理。",
+    "status": "success",
+    "durationMs": 7050,
+    "timestamp": "2026-05-03T05:53:11.149Z"
+  },
+  {
+    "id": "3c084ff5-db23-4069-b634-8d8e8e772ec4",
+    "sessionId": "07db12be-bc25-43d0-847f-8fc8de8ba2e8",
+    "prompt": "在不",
+    "promptPreview": "在不",
+    "replyPreview": "Codex 调用失败：`[features].web_search_request` is deprecated because web search is e",
+    "status": "failed",
+    "durationMs": 25809,
+    "timestamp": "2026-05-03T05:52:53.940Z"
+  },
+  {
+    "id": "e1f0775a-e436-4788-9705-ed334a42c88c",
+    "sessionId": "07db12be-bc25-43d0-847f-8fc8de8ba2e8",
+    "prompt": "在不",
+    "promptPreview": "在不",
+    "replyPreview": "Codex 调用失败：Error loading config.toml: model_providers contains reserved built-in",
+    "status": "failed",
+    "durationMs": 42,
+    "timestamp": "2026-05-03T05:43:03.060Z"
+  },
+  {
+    "id": "95171dde-f297-4c43-a6de-394611dee09e",
+    "sessionId": "07db12be-bc25-43d0-847f-8fc8de8ba2e8",
+    "prompt": "在不",
+    "promptPreview": "在不",
+    "replyPreview": "你的消息像是没发完整，只看到“在不”。 把完整问题补发一下，我直接继续。",
+    "status": "success",
+    "durationMs": 6626,
+    "timestamp": "2026-05-03T05:02:46.831Z"
+  },
+  {
+    "id": "12f84884-9c71-4f5f-8471-492104b33d11",
+    "sessionId": "850385c0-655a-458d-b2fb-f7eb6d90856a",
+    "prompt": "请只回复：正常",
+    "promptPreview": "请只回复：正常",
+    "replyPreview": "正常",
+    "status": "success",
+    "durationMs": 4966,
+    "timestamp": "2026-05-03T05:01:49.692Z"
+  },
+  {
+    "id": "03730fbc-4f78-4ee8-a627-ee26d5e165f2",
+    "sessionId": "3fa8d522-a27e-4328-94dd-6f68fc5aaff8",
+    "prompt": "请只回复：正常",
+    "promptPreview": "请只回复：正常",
+    "replyPreview": "正常",
+    "status": "success",
+    "durationMs": 3382,
+    "timestamp": "2026-05-03T05:00:27.663Z"
+  },
+  {
+    "id": "1e619f09-c0ec-4b02-bee1-4a35274b1412",
+    "sessionId": "07db12be-bc25-43d0-847f-8fc8de8ba2e8",
+    "prompt": "？？？",
+    "promptPreview": "？？？",
+    "replyPreview": "Codex 调用失败：`[features].web_search_request` is deprecated because web search is e",
+    "status": "failed",
+    "durationMs": 9782,
+    "timestamp": "2026-05-03T04:40:57.986Z"
+  },
+  {
+    "id": "cca5529f-778b-4764-9e70-17ec9668081e",
+    "sessionId": "07db12be-bc25-43d0-847f-8fc8de8ba2e8",
+    "prompt": "？？？",
+    "promptPreview": "？？？",
+    "replyPreview": "Codex 调用失败：`[features].web_search_request` is deprecated because web search is e",
+    "status": "failed",
+    "durationMs": 6890,
+    "timestamp": "2026-05-03T04:38:07.745Z"
+  },
+  {
+    "id": "31e4ef58-7efa-435b-847a-d8f55284afe3",
+    "sessionId": "07db12be-bc25-43d0-847f-8fc8de8ba2e8",
+    "prompt": "codex resume 019debf4-9276-7702-a043-5a0da3d718e0继续这个会话任务",
+    "promptPreview": "codex resume 019debf4-9276-7702-a043-5a0da3d718e0继续这个会话任务",
+    "replyPreview": "Codex 调用失败：`[features].web_search_request` is deprecated because web search is e",
+    "status": "failed",
+    "durationMs": 6949,
+    "timestamp": "2026-05-03T04:37:46.318Z"
+  }
+]

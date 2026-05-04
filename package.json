@@ -5,7 +5,8 @@
   "description": "A simple web UI that proxies local Codex CLI sessions.",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "proxy": "sh ./scripts/start-proxy.sh"
   },
   "engines": {
     "node": ">=18"

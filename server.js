@@ -3,13 +3,28 @@ const fs = require('fs');
 const http = require('http');
 const os = require('os');
 const path = require('path');
-const { execFileSync, spawn } = require('child_process');
+const { execFileSync, spawn, exec } = require('child_process');
+
+function parseTimeoutMs(timeoutValue) {
+  const normalized = String(timeoutValue ?? '0').trim();
+  const parsed = Number.parseInt(normalized, 10);
+
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+
+  if (parsed <= 0) {
+    return 0;
+  }
+
+  return parsed;
+}
 
 const PORT = Number.parseInt(process.env.PORT || '9009', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 const CODEX_BIN = process.env.CODEX_BIN || 'codex';
 const CODEX_WORKDIR = path.resolve(process.env.CODEX_WORKDIR || __dirname);
-const CODEX_TIMEOUT_MS = Number.parseInt(process.env.CODEX_TIMEOUT_MS || '600000', 10);
+const CODEX_TIMEOUT_MS = parseTimeoutMs(process.env.CODEX_TIMEOUT_MS ?? '0');
 const ENABLE_EXECUTE_API = process.env.ENABLE_EXECUTE_API === 'true';
 const WORKSPACE_CONFIG_PATH = path.join(__dirname, 'config.toml');
 
@@ -25,6 +40,8 @@ const MAX_ATTACHMENTS = 6;
 const MAX_TEXT_ATTACHMENT_BYTES = 512 * 1024;
 const MAX_IMAGE_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const SESSION_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+const VALID_SANDBOX_MODES = new Set(["read-only", "workspace-write", "danger-full-access"]);
+const VALID_APPROVAL_POLICIES = new Set(["untrusted", "on-failure", "on-request", "never"]);
 const RUN_STATUSES = new Map();
 const TEXT_ATTACHMENT_EXTENSIONS = new Set([
   '.txt', '.md', '.markdown', '.js', '.jsx', '.ts', '.tsx', '.json', '.yaml', '.yml',
@@ -221,6 +238,7 @@ function createIdleRunStatus(sessionId) {
     threadId: null,
     messagePreview: '',
     entries: [],
+    sequence: 0,
   };
 }
 
@@ -238,6 +256,7 @@ function cloneRunStatus(runStatus) {
     threadId: runStatus.threadId,
     messagePreview: runStatus.messagePreview,
     entries: runStatus.entries.map(entry => ({ ...entry })),
+    sequence: runStatus.sequence || 0,
   };
 }
 
@@ -392,8 +411,11 @@ function handleRunItemEvent(runStatus, item, phase, hooks) {
       detail: truncateText(text, 1200),
     });
     emitRunStatusEntry(hooks, entry);
-    if (phase === 'completed' && hooks && typeof hooks.onAssistantMessage === 'function') {
-      hooks.onAssistantMessage(text, item);
+    if (hooks && typeof hooks.onAssistantMessage === 'function') {
+      hooks.onAssistantMessage(text, {
+        phase,
+        item: { ...item },
+      });
     }
     return;
   }
@@ -565,7 +587,7 @@ function getFileExtension(fileName) {
 
 function sanitizeAttachmentName(fileName) {
   const cleaned = path.basename(String(fileName || 'attachment'))
-    .replace(/[^\w.\-()+\[\] ]+/g, '_')
+    .replace(/[^\w.\-()+\[\\] ]+/g, '_')
     .trim();
   return cleaned || 'attachment';
 }
@@ -801,6 +823,38 @@ function writeNdjsonLine(res, payload) {
   res.write(`${JSON.stringify(payload)}\n`);
 }
 
+function createNdjsonStream(res, req) {
+  let closed = false;
+
+  const markClosed = () => {
+    closed = true;
+  };
+
+  req.on('aborted', markClosed);
+  req.on('close', markClosed);
+  res.on('close', markClosed);
+  res.on('finish', markClosed);
+
+  return {
+    write(payload) {
+      if (closed || res.destroyed || res.writableEnded) {
+        return false;
+      }
+
+      try {
+        writeNdjsonLine(res, payload);
+        return true;
+      } catch {
+        closed = true;
+        return false;
+      }
+    },
+    isClosed() {
+      return closed || res.destroyed || res.writableEnded;
+    },
+  };
+}
+
 function getLanAddresses() {
   const interfaces = os.networkInterfaces();
   const addresses = [];
@@ -817,7 +871,7 @@ function getLanAddresses() {
 }
 
 function escapeRegExp(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return String(value).replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
 }
 
 function matchScalar(tomlContent, key) {
@@ -845,13 +899,156 @@ function matchProviderName(tomlContent, providerKey) {
 
 function matchBoolean(tomlContent, key) {
   const escapedKey = escapeRegExp(key);
-  const match = tomlContent.match(new RegExp(`^${escapedKey}\\s*=\\s*(true|false)\\s*$`, 'mi'));
+  const match = tomlContent.match(new RegExp(`^${escapedKey}\s*=\s*(true|false)\s*$`, 'mi'));
   if (!match) {
     return null;
   }
-  return match[1].toLowerCase() === 'true';
+  return match[1].toLowerCase() === "true";
 }
 
+function getTomlSectionContent(tomlContent, sectionName) {
+  const escapedSectionName = escapeRegExp(sectionName);
+  const sectionMatch = tomlContent.match(
+    new RegExp(`\\[${escapedSectionName}\\]([\s\S]*?)(?=\n\\[|$)`)
+  );
+
+  return sectionMatch ? sectionMatch[1] : '';
+}
+
+function matchSectionScalar(tomlContent, sectionName, key) {
+  const sectionContent = getTomlSectionContent(tomlContent, sectionName);
+  return sectionContent ? matchScalar(sectionContent, key) : null;
+}
+
+function matchSectionBoolean(tomlContent, sectionName, key) {
+  const sectionContent = getTomlSectionContent(tomlContent, sectionName);
+  return sectionContent ? matchBoolean(sectionContent, key) : null;
+}
+
+function normalizeSandboxModeValue(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  return VALID_SANDBOX_MODES.has(normalized) ? normalized : null;
+}
+
+function normalizeApprovalPolicyValue(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  return VALID_APPROVAL_POLICIES.has(normalized) ? normalized : null;
+}
+
+function describeRuntimePermissions(runtimePermissions) {
+  if (!runtimePermissions) {
+    return '跟随 Codex CLI 配置';
+  }
+
+  if (runtimePermissions.dangerouslyBypass) {
+    return 'danger-full-access · 无需审批';
+  }
+
+  const approvalLabels = {
+    untrusted: '仅信任命令免审批',
+    'on-failure': '失败后审批',
+    'on-request': '按需审批',
+    never: '无需审批',
+  };
+  const parts = [];
+
+  if (runtimePermissions.sandboxMode) {
+    parts.push(runtimePermissions.sandboxMode);
+  }
+  if (runtimePermissions.approvalPolicy) {
+    parts.push(approvalLabels[runtimePermissions.approvalPolicy] || runtimePermissions.approvalPolicy);
+  }
+
+  return parts.length ? parts.join(' · ') : '跟随 Codex CLI 配置';
+}
+
+function readWorkspaceRuntimePermissions() {
+  if (!fs.existsSync(WORKSPACE_CONFIG_PATH)) {
+    return {
+      path: null,
+      sandboxMode: null,
+      approvalPolicy: null,
+      dangerouslyBypass: false,
+      usesWorkspaceOverrides: false,
+      summary: '跟随 Codex CLI 配置',
+    };
+  }
+
+  const content = fs.readFileSync(WORKSPACE_CONFIG_PATH, 'utf8');
+  const maxPermissions = matchSectionBoolean(content, 'server', 'max_permissions') === true;
+  const autoConfirm = matchSectionBoolean(content, 'server', 'auto_confirm') === true;
+  const noPermissionPrompts = matchSectionBoolean(content, 'server', 'no_permission_prompts') === true;
+  const autoGrant = matchSectionBoolean(content, 'permissions', 'auto_grant') === true;
+  const confirmRequired = matchSectionBoolean(content, 'permissions', 'confirm_required');
+
+  const explicitSandboxMode = normalizeSandboxModeValue(
+    matchSectionScalar(content, 'codex', 'sandbox_mode')
+    || matchSectionScalar(content, 'codex', 'sandbox')
+    || matchSectionScalar(content, 'permissions', 'sandbox_mode')
+    || matchSectionScalar(content, 'permissions', 'sandbox')
+  );
+  const explicitApprovalPolicy = normalizeApprovalPolicyValue(
+    matchSectionScalar(content, 'codex', 'approval_policy')
+    || matchSectionScalar(content, 'codex', 'ask_for_approval')
+    || matchSectionScalar(content, 'permissions', 'approval_policy')
+    || matchSectionScalar(content, 'permissions', 'ask_for_approval')
+  );
+
+  let sandboxMode = explicitSandboxMode;
+  if (!sandboxMode && maxPermissions) {
+    sandboxMode = 'danger-full-access';
+  }
+
+  const autoApproveRequested = autoConfirm || noPermissionPrompts || autoGrant || confirmRequired === false;
+  let approvalPolicy = explicitApprovalPolicy;
+  if (!approvalPolicy && autoApproveRequested) {
+    approvalPolicy = 'never';
+  }
+
+  const requestedDangerouslyBypass = matchSectionBoolean(
+    content,
+    'codex',
+    'dangerously_bypass_approvals_and_sandbox'
+  ) === true;
+  const dangerouslyBypass = requestedDangerouslyBypass
+    || (maxPermissions && sandboxMode === 'danger-full-access' && approvalPolicy === 'never');
+
+  const runtimePermissions = {
+    path: WORKSPACE_CONFIG_PATH,
+    sandboxMode: dangerouslyBypass ? 'danger-full-access' : sandboxMode,
+    approvalPolicy: dangerouslyBypass ? 'never' : approvalPolicy,
+    dangerouslyBypass,
+    usesWorkspaceOverrides: Boolean(
+      maxPermissions
+      || autoApproveRequested
+      || requestedDangerouslyBypass
+      || explicitSandboxMode
+      || explicitApprovalPolicy
+    ),
+  };
+
+  runtimePermissions.summary = describeRuntimePermissions(runtimePermissions);
+  return runtimePermissions;
+}
+
+function buildRuntimePermissionArgs(runtimePermissions) {
+  if (!runtimePermissions) {
+    return [];
+  }
+
+  if (runtimePermissions.dangerouslyBypass) {
+    return ['--dangerously-bypass-approvals-and-sandbox'];
+  }
+
+  const args = [];
+  if (runtimePermissions.sandboxMode) {
+    args.push('-c', `sandbox_mode="${escapeTomlString(runtimePermissions.sandboxMode)}"`);
+  }
+  if (runtimePermissions.approvalPolicy) {
+    args.push('-c', `approval_policy="${escapeTomlString(runtimePermissions.approvalPolicy)}"`);
+  }
+  return args;
+}
 function parseProviders(tomlContent, currentProviderKey) {
   const providers = [];
   const sectionPattern = /^\[model_providers\.([^\]]+)\]\s*$/gm;
@@ -881,7 +1078,7 @@ function parseProviders(tomlContent, currentProviderKey) {
 }
 
 function findSectionKeyLine(tomlContent, sectionName, key) {
-  const keyPattern = new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*=`);
+  const keyPattern = new RegExp(`^${key.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\s*=`);
   const lines = tomlContent.split(/\r?\n/);
   let currentSection = null;
 
@@ -1341,6 +1538,16 @@ function getCodexVersion() {
   }
 }
 
+// clean script output control chars
+function cleanScriptOutput(text) {
+  return text
+    .replace(/\r/g, '')
+    .replace(/\x1B\[[\d;?]*[A-Za-z]/g, '')
+    .replace(/\x1B\][^\x07]*\x07/g, '')
+    .replace(/\x1B[()[\]A-Za-z]/g, '')
+    .replace(/[^\x20-\x7E\n\t\u4e00-\u9fff\u3000-\u303f\uff00-\uffef'{},:\[\]]/g, '');
+}
+
 function parseCodexJsonLines(output, initialThreadId) {
   let threadId = initialThreadId || null;
   let reply = '';
@@ -1424,21 +1631,21 @@ function sanitizeCodexStderr(stderr) {
 function runCodex(message, threadId, runStatus, hooks, options = {}) {
   return new Promise((resolve, reject) => {
     normalizeCodexConfigFile();
+    const runtimePermissions = readWorkspaceRuntimePermissions();
     const imageArgs = Array.isArray(options.imagePaths)
       ? options.imagePaths.flatMap(imagePath => ['--image', imagePath])
       : [];
+    const permissionArgs = buildRuntimePermissionArgs(runtimePermissions);
 
     const args = threadId
-      ? ['exec', 'resume', '--json', '--skip-git-repo-check', ...imageArgs, '--', threadId, message]
-      : ['exec', '--json', '--skip-git-repo-check', ...imageArgs, '--', message];
+      ? ['exec', 'resume', ...permissionArgs, '--json', '--skip-git-repo-check', ...imageArgs, '--', threadId, message]
+      : ['exec', ...permissionArgs, '--json', '--skip-git-repo-check', ...imageArgs, '--', message];
 
-    const child = spawn(CODEX_BIN, args, {
-      cwd: CODEX_WORKDIR,
-      env: process.env,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-
-    child.stdin.end();
+    // use script PTY for codex CLI
+    const shellArgs = [CODEX_BIN, ...args].map(a => {
+      return "'" + String(a).replace(/'/g, "'\\''") + "'";
+    }).join(' ');
+    const fullCmd = `script -q -c "${shellArgs}" /dev/null`;
 
     let stdout = '';
     let stderr = '';
@@ -1446,17 +1653,24 @@ function runCodex(message, threadId, runStatus, hooks, options = {}) {
     let stderrLineBuffer = '';
     let didTimeout = false;
 
-    const timer = setTimeout(() => {
-      didTimeout = true;
-      child.kill('SIGTERM');
-      setTimeout(() => child.kill('SIGKILL'), 5000);
-    }, CODEX_TIMEOUT_MS);
+    const childProcess = exec(fullCmd, {
+      cwd: CODEX_WORKDIR,
+      env: process.env,
+      maxBuffer: 50 * 1024 * 1024,
+    });
 
-    child.stdout.on('data', chunk => {
+    const timer = CODEX_TIMEOUT_MS > 0
+      ? setTimeout(() => {
+          didTimeout = true;
+          childProcess.kill('SIGTERM');
+          setTimeout(() => childProcess.kill('SIGKILL'), 5000);
+        }, CODEX_TIMEOUT_MS)
+      : null;
+
+    childProcess.stdout.on('data', chunk => {
       const text = chunk.toString();
       stdout += text;
       stdoutLineBuffer += text;
-
       const lines = stdoutLineBuffer.split(/\r?\n/);
       stdoutLineBuffer = lines.pop() || '';
       for (const line of lines) {
@@ -1464,11 +1678,10 @@ function runCodex(message, threadId, runStatus, hooks, options = {}) {
       }
     });
 
-    child.stderr.on('data', chunk => {
+    childProcess.stderr.on('data', chunk => {
       const text = chunk.toString();
       stderr += text;
       stderrLineBuffer += text;
-
       const lines = stderrLineBuffer.split(/\r?\n/);
       stderrLineBuffer = lines.pop() || '';
       for (const line of lines) {
@@ -1476,36 +1689,34 @@ function runCodex(message, threadId, runStatus, hooks, options = {}) {
       }
     });
 
-    child.on('error', error => {
-      clearTimeout(timer);
+    childProcess.on('error', error => {
+      if (timer) { clearTimeout(timer); }
       reject(error);
     });
 
-    child.on('close', code => {
-      clearTimeout(timer);
-
+    childProcess.on('close', code => {
+      if (timer) { clearTimeout(timer); }
       if (didTimeout) {
-        reject(new Error(`Codex 调用超时（>${CODEX_TIMEOUT_MS}ms）`));
+        reject(new Error(`Codex timeout (>${CODEX_TIMEOUT_MS}ms)`));
         return;
       }
-
-      const parsed = parseCodexJsonLines(stdout, threadId);
+      const parsed = parseCodexJsonLines(cleanScriptOutput(stdout), threadId);
       parsed.diagnostics = filterNonFatalDiagnostics(parsed.diagnostics);
-      if (stdoutLineBuffer.trim()) {
-        handleRunEventLine(runStatus, stdoutLineBuffer, hooks);
-      }
-      if (stderrLineBuffer.trim()) {
-        handleRunDiagnosticLine(runStatus, stderrLineBuffer, hooks);
-      }
-      if (parsed.reply) {
-        resolve(parsed);
+      if (stdoutLineBuffer.trim()) { handleRunEventLine(runStatus, stdoutLineBuffer, hooks); }
+      if (stderrLineBuffer.trim()) { handleRunDiagnosticLine(runStatus, stderrLineBuffer, hooks); }
+      if (parsed.reply) { resolve(parsed); return; }
+      const reparsed = parseCodexJsonLines(cleanScriptOutput(stdout), threadId);
+      if (reparsed.reply) { resolve(reparsed); return; }
+      const stderrText = sanitizeCodexStderr(stderr);
+      if (code === 0 && !reparsed.reply && !stderrText.trim()) {
+        resolve({ reply: '', threadId: threadId || '', diagnostics: [] });
         return;
       }
-
-      const details = parsed.diagnostics.concat(sanitizeCodexStderr(stderr)).filter(Boolean).join('\n');
-      reject(new Error(details || `Codex 调用失败（退出码 ${code}）`));
+      const details = parsed.diagnostics.concat(stderrText).filter(Boolean).join('\n');
+      reject(new Error(details || `Codex failed (exit ${code})`));
     });
   });
+
 }
 
 function getSafeStaticPath(requestPath) {
@@ -1537,6 +1748,7 @@ function buildInfoPayload() {
   const config = readCodexConfigSummary();
   const auth = readCodexAuthSummary();
   const currentProvider = config.providers.find(item => item.key === config.modelProvider);
+  const runtimePermissions = readWorkspaceRuntimePermissions();
   return {
     version: getCodexVersion(),
     workdir: CODEX_WORKDIR,
@@ -1550,7 +1762,8 @@ function buildInfoPayload() {
     reasoningEffort: config.reasoningEffort,
     contextWindow: config.contextWindow,
     configPath: config.configPath,
-    workspaceConfigPath: fs.existsSync(WORKSPACE_CONFIG_PATH) ? WORKSPACE_CONFIG_PATH : null,
+    workspaceConfigPath: runtimePermissions.path,
+    runtimePermissions,
     configWarnings: config.configWarnings,
     providers: config.providers,
     authPath: auth.authPath,
@@ -1722,14 +1935,25 @@ const server = http.createServer(async (req, res) => {
         'Cache-Control': 'no-store',
         'X-Accel-Buffering': 'no',
       });
+      if (res.socket && typeof res.socket.setNoDelay === 'function') {
+        res.socket.setNoDelay(true);
+      }
       if (typeof res.flushHeaders === 'function') {
         res.flushHeaders();
       }
+      const stream = createNdjsonStream(res, req);
+      const heartbeatTimer = setInterval(() => {
+        stream.write({
+          type: 'heartbeat',
+          timestamp: new Date().toISOString(),
+        });
+      }, 15000);
 
-      writeNdjsonLine(res, {
+      stream.write({
         type: 'accepted',
         session,
         sessionSummary: makeSessionSummary(session),
+        runStatus: getRunStatus(session.id),
       });
 
       try {
@@ -1743,11 +1967,20 @@ const server = http.createServer(async (req, res) => {
           shouldStartFreshThread ? null : session.codexThreadId,
           runStatus,
           {
-            onAssistantMessage(text) {
-              writeNdjsonLine(res, {
+            onStatusEntry(entry) {
+              stream.write({
+                type: 'status_entry',
+                sessionId: session.id,
+                entry,
+                runStatus: getRunStatus(session.id),
+              });
+            },
+            onAssistantMessage(text, meta) {
+              stream.write({
                 type: 'assistant_message',
                 text,
                 sessionId: session.id,
+                phase: meta?.phase || 'completed',
               });
             },
           },
@@ -1778,13 +2011,19 @@ const server = http.createServer(async (req, res) => {
         });
         finalizeRunStatus(runStatus, 'success', codexResult.reply || 'Codex 没有返回内容');
 
-        writeNdjsonLine(res, {
+        stream.write({
+          type: 'run_status',
+          sessionId: session.id,
+          runStatus: getRunStatus(session.id),
+        });
+        stream.write({
           type: 'final',
           success: true,
           response: codexResult.reply,
           session,
           sessionSummary: makeSessionSummary(session),
           historyItem,
+          runStatus: getRunStatus(session.id),
         });
       } catch (error) {
         const assistantMessage = `Codex 调用失败：${error.message}`;
@@ -1807,14 +2046,21 @@ const server = http.createServer(async (req, res) => {
           timestamp: new Date().toISOString(),
         });
 
-        writeNdjsonLine(res, {
+        stream.write({
+          type: 'run_status',
+          sessionId: session.id,
+          runStatus: getRunStatus(session.id),
+        });
+        stream.write({
           type: 'error',
           success: false,
           error: error.message,
           session,
           sessionSummary: makeSessionSummary(session),
+          runStatus: getRunStatus(session.id),
         });
       } finally {
+        clearInterval(heartbeatTimer);
         cleanupPreparedAttachments(preparedAttachments);
       }
 
@@ -1991,6 +2237,7 @@ server.listen(PORT, HOST, () => {
   }
   console.log(`  工作区: ${CODEX_WORKDIR}`);
   console.log(`  版本: ${getCodexVersion()}`);
+  console.log(`  权限: ${info.runtimePermissions?.summary || '跟随 Codex CLI 配置'}`);
   if (info.configWarnings.length) {
     console.log('  配置告警:');
     for (const warning of info.configWarnings) {

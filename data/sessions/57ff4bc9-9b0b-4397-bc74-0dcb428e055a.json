@@ -1,0 +1,21 @@
+{
+  "id": "57ff4bc9-9b0b-4397-bc74-0dcb428e055a",
+  "title": "只执行这一条 shell 命令，不要解释：nohup sh -lc 'cd /root/.codex/tmp/codex-webui && PORT=9014",
+  "customTitle": false,
+  "codexThreadId": "019ded29-c34a-7283-8daa-c5b2c29fc69a",
+  "configRevision": 2,
+  "createdAt": "2026-05-03T09:27:10.028Z",
+  "updatedAt": "2026-05-03T09:27:25.350Z",
+  "messages": [
+    {
+      "role": "user",
+      "content": "只执行这一条 shell 命令，不要解释：nohup sh -lc 'cd /root/.codex/tmp/codex-webui && PORT=9014 CODEX_TIMEOUT_MS=0 node server.js > data/server-9014.log 2>&1' >/dev/null 2>&1 & echo started",
+      "timestamp": "2026-05-03T09:27:10.028Z"
+    },
+    {
+      "role": "assistant",
+      "content": "started",
+      "timestamp": "2026-05-03T09:27:25.350Z"
+    }
+  ]
+}

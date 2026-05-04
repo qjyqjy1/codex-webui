@@ -1,7 +1,7 @@
 # Codex Web UI Configuration
 # Port 9009 - Max Permissions Mode
 
-model = "gpt-5.3-codex"
+model = "LongCat-2.0-Preview"
 model_reasoning_effort = "xhigh"
 model_context_window = 128000
 

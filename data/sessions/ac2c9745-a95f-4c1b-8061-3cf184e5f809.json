@@ -1,0 +1,21 @@
+{
+  "id": "ac2c9745-a95f-4c1b-8061-3cf184e5f809",
+  "title": "只回复OK",
+  "customTitle": false,
+  "codexThreadId": "019ded16-54c4-7690-a161-df9385b4033d",
+  "configRevision": 2,
+  "createdAt": "2026-05-03T09:05:56.565Z",
+  "updatedAt": "2026-05-03T09:05:59.785Z",
+  "messages": [
+    {
+      "role": "user",
+      "content": "只回复OK",
+      "timestamp": "2026-05-03T09:05:56.565Z"
+    },
+    {
+      "role": "assistant",
+      "content": "OK",
+      "timestamp": "2026-05-03T09:05:59.785Z"
+    }
+  ]
+}

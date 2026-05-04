@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+set -eu
+
+ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+STATE_DIR=${OPENCLAW_STATE_DIR:-"$ROOT_DIR/.openclaw"}
+HOME_DIR=${OPENCLAW_HOME:-"$ROOT_DIR/.openclaw-home"}
+CONFIG_PATH=${OPENCLAW_CONFIG_PATH:-"$STATE_DIR/openclaw.json"}
+
+mkdir -p "$STATE_DIR" "$HOME_DIR"
+
+export OPENCLAW_STATE_DIR="$STATE_DIR"
+export OPENCLAW_HOME="$HOME_DIR"
+export OPENCLAW_CONFIG_PATH="$CONFIG_PATH"
+
+exec "$ROOT_DIR/.npm-global/bin/openclaw" "$@"
